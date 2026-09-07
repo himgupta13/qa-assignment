@@ -1,0 +1,642 @@
+{
+  "config": {
+    "argv": [
+      "/opt/homebrew/Cellar/node/26.5.0_1/bin/node",
+      "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/node_modules/.bin/playwright",
+      "test"
+    ],
+    "configFile": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/playwright.config.ts",
+    "rootDir": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 3
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 3
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 15000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "eval/last-run.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 4,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "cart.spec.ts",
+      "file": "cart.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "POST /cart",
+          "file": "cart.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "adding an item returns 200 with the cart containing that item",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 43,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.390Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1981448f0b79506fb670-15b469ade23c874e7953",
+              "file": "cart.spec.ts",
+              "line": 11,
+              "column": 7
+            },
+            {
+              "title": "quantity at the spec minimum (1) is accepted",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 16,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.457Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1981448f0b79506fb670-e279ef1a0c242678a671",
+              "file": "cart.spec.ts",
+              "line": 28,
+              "column": 7
+            },
+            {
+              "title": "adding the same product twice does not produce two separate line items",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.481Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1981448f0b79506fb670-1cb8bd4f2b4aee7dedff",
+              "file": "cart.spec.ts",
+              "line": 44,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "GET /cart",
+          "file": "cart.spec.ts",
+          "line": 56,
+          "column": 6,
+          "specs": [
+            {
+              "title": "reading a cart with no prior activity returns an empty items array, not an error",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.491Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1981448f0b79506fb670-e63b1e2e10ae977dfc3c",
+              "file": "cart.spec.ts",
+              "line": 58,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "DELETE /cart",
+          "file": "cart.spec.ts",
+          "line": 66,
+          "column": 6,
+          "specs": [
+            {
+              "title": "emptying the cart returns the documented 204",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 18,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.503Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1981448f0b79506fb670-2412dbdf21acc388a170",
+              "file": "cart.spec.ts",
+              "line": 68,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "checkout.spec.ts",
+      "file": "checkout.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "POST /checkout",
+          "file": "checkout.spec.ts",
+          "line": 29,
+          "column": 6,
+          "specs": [
+            {
+              "title": "a valid order returns 200 with the OrderResult required shape",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 41,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.392Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "25ab1bfc84c57e3e3a45-dbe8f574ad36959e5ed8",
+              "file": "checkout.spec.ts",
+              "line": 32,
+              "column": 7
+            },
+            {
+              "title": "after a successful order, the cart for that user is empty",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 23,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m1\u001b[39m\nReceived array:  \u001b[31m[{\"product\": {\"categories\": [\"accessories\", \"telescopes\"], \"id\": \"0PUK6V6EV0\", \"name\": \"Solar System Color Imager\", \"priceUsd\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 175}}, \"productId\": \"0PUK6V6EV0\", \"quantity\": 1}]\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m1\u001b[39m\nReceived array:  \u001b[31m[{\"product\": {\"categories\": [\"accessories\", \"telescopes\"], \"id\": \"0PUK6V6EV0\", \"name\": \"Solar System Color Imager\", \"priceUsd\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 175}}, \"productId\": \"0PUK6V6EV0\", \"quantity\": 1}]\u001b[39m\n    at /Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts:62:24",
+                        "location": {
+                          "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
+                          "column": 24,
+                          "line": 62
+                        },
+                        "snippet": "  60 |     const cartRes = await request.get(`/api/cart?sessionId=${userId}`);\n  61 |     const cart = await cartRes.json();\n> 62 |     expect(cart.items).toHaveLength(0);\n     |                        ^\n  63 |   });\n  64 |\n  65 |   // spec: 422 response documented for this operation, with a `code` field."
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
+                            "column": 24,
+                            "line": 62
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m1\u001b[39m\nReceived array:  \u001b[31m[{\"product\": {\"categories\": [\"accessories\", \"telescopes\"], \"id\": \"0PUK6V6EV0\", \"name\": \"Solar System Color Imager\", \"priceUsd\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 175}}, \"productId\": \"0PUK6V6EV0\", \"quantity\": 1}]\u001b[39m\n\n  60 |     const cartRes = await request.get(`/api/cart?sessionId=${userId}`);\n  61 |     const cart = await cartRes.json();\n> 62 |     expect(cart.items).toHaveLength(0);\n     |                        ^\n  63 |   });\n  64 |\n  65 |   // spec: 422 response documented for this operation, with a `code` field.\n    at /Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts:62:24"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.459Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/test-results/checkout-POST-checkout-aft-9c23e-cart-for-that-user-is-empty/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
+                        "column": 24,
+                        "line": 62
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "25ab1bfc84c57e3e3a45-f90e207e2145f7420cf7",
+              "file": "checkout.spec.ts",
+              "line": 52,
+              "column": 7
+            },
+            {
+              "title": "a declined payment returns the documented 422 with a code field — requires flagd, not testable against the mock",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
+                        "line": 72,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.495Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
+                            "line": 72,
+                            "column": 8
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "25ab1bfc84c57e3e3a45-1573d58b9ade4df8b673",
+              "file": "checkout.spec.ts",
+              "line": 72,
+              "column": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "products.spec.ts",
+      "file": "products.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "GET /products",
+          "file": "products.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "returns an array of products, each with the required fields",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 45,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.390Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "000c94276132c4f97581-77b1a1c30fcd64c9cbd4",
+              "file": "products.spec.ts",
+              "line": 10,
+              "column": 7
+            },
+            {
+              "title": "currencyCode query param is reflected in each product priceUsd.currencyCode",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 14,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.459Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "000c94276132c4f97581-8d59eb824b8bfdac19e7",
+              "file": "products.spec.ts",
+              "line": 30,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "GET /products/{productId}",
+          "file": "products.spec.ts",
+          "line": 39,
+          "column": 6,
+          "specs": [
+            {
+              "title": "a valid productId returns 200 with the full Product shape",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.484Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "000c94276132c4f97581-aef6cd971ebee6de8450",
+              "file": "products.spec.ts",
+              "line": 41,
+              "column": 7
+            },
+            {
+              "title": "a nonexistent productId returns the documented 404",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.493Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "000c94276132c4f97581-7ecd3770f05c1cb25581",
+              "file": "products.spec.ts",
+              "line": 52,
+              "column": 7
+            },
+            {
+              "title": "priceUsd.nanos stays within the spec-declared bounds regardless of currency",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 15,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-07T16:24:29.504Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "000c94276132c4f97581-645d02829f85212651f6",
+              "file": "products.spec.ts",
+              "line": 60,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-07T16:24:29.115Z",
+    "duration": 421.54800000000006,
+    "expected": 11,
+    "skipped": 1,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

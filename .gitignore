@@ -1,0 +1,7 @@
+# The demo app is cloned fresh per the root README, not committed here.
+/opentelemetry-demo/
+
+node_modules/
+test-results/
+playwright-report/
+.DS_Store

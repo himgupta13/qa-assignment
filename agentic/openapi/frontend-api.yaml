@@ -1,0 +1,225 @@
+openapi: 3.0.3
+info:
+  title: Astro Shop Frontend BFF API (Checkout & Product Catalog)
+  version: "1.0.0"
+  description: >
+    Hand-written from reading opentelemetry-demo/src/frontend/pages/api/**, since the demo
+    app itself does not ship an OpenAPI spec for this REST BFF layer (internal services
+    only publish .proto — see pb/demo.proto). This is the input artifact for the agentic
+    test-generation workflow in this directory; it deliberately covers only the checkout,
+    cart, and product-catalog surface (the highest-risk flows per ../../test-strategy.md),
+    not the full frontend API surface.
+servers:
+  - url: http://localhost:8080/api
+paths:
+  /products:
+    get:
+      operationId: listProducts
+      summary: List all products, priced in the given currency
+      parameters:
+        - name: currencyCode
+          in: query
+          required: false
+          schema: { type: string, example: USD }
+      responses:
+        "200":
+          description: Array of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Product' }
+  /products/{productId}:
+    get:
+      operationId: getProduct
+      summary: Get a single product by ID
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: currencyCode
+          in: query
+          required: false
+          schema: { type: string, example: USD }
+      responses:
+        "200":
+          description: The product
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        "404":
+          description: Product not found
+  /cart:
+    get:
+      operationId: getCart
+      parameters:
+        - name: sessionId
+          in: query
+          required: true
+          schema: { type: string }
+        - name: currencyCode
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: The cart, with products enriched from the catalog
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cart' }
+    post:
+      operationId: addToCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, item]
+              properties:
+                userId: { type: string }
+                item: { $ref: '#/components/schemas/CartItem' }
+      responses:
+        "200":
+          description: The updated cart
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cart' }
+    delete:
+      operationId: emptyCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: string }
+      responses:
+        "204":
+          description: Cart emptied
+  /checkout:
+    post:
+      operationId: placeOrder
+      parameters:
+        - name: currencyCode
+          in: query
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlaceOrderRequest' }
+      responses:
+        "200":
+          description: Order placed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderResult' }
+        "422":
+          description: Payment declined
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  code: { type: string, enum: [PAYMENT_FAILED] }
+        "500":
+          description: Unhandled downstream failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+components:
+  schemas:
+    Money:
+      type: object
+      required: [currencyCode, units, nanos]
+      properties:
+        currencyCode: { type: string, minLength: 3, maxLength: 3 }
+        units: { type: integer, format: int64 }
+        nanos:
+          type: integer
+          minimum: -999999999
+          maximum: 999999999
+    Product:
+      type: object
+      required: [id, name, priceUsd]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        picture: { type: string }
+        priceUsd: { $ref: '#/components/schemas/Money' }
+        categories:
+          type: array
+          items: { type: string }
+    CartItem:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId: { type: string }
+        quantity: { type: integer, minimum: 1 }
+    Cart:
+      type: object
+      properties:
+        userId: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId: { type: string }
+              quantity: { type: integer }
+              product: { $ref: '#/components/schemas/Product' }
+    Address:
+      type: object
+      required: [streetAddress, city, state, country, zipCode]
+      properties:
+        streetAddress: { type: string }
+        city: { type: string }
+        state: { type: string }
+        country: { type: string }
+        zipCode: { type: string }
+    CreditCardInfo:
+      type: object
+      required: [creditCardNumber, creditCardCvv, creditCardExpirationYear, creditCardExpirationMonth]
+      properties:
+        creditCardNumber: { type: string }
+        creditCardCvv: { type: integer }
+        creditCardExpirationYear: { type: integer }
+        creditCardExpirationMonth: { type: integer, minimum: 1, maximum: 12 }
+    PlaceOrderRequest:
+      type: object
+      required: [userId, userCurrency, address, email, creditCard]
+      properties:
+        userId: { type: string }
+        userCurrency: { type: string }
+        address: { $ref: '#/components/schemas/Address' }
+        email: { type: string, format: email }
+        creditCard: { $ref: '#/components/schemas/CreditCardInfo' }
+    OrderResult:
+      type: object
+      properties:
+        orderId: { type: string }
+        shippingTrackingId: { type: string }
+        shippingCost: { $ref: '#/components/schemas/Money' }
+        shippingAddress: { $ref: '#/components/schemas/Address' }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              cost: { $ref: '#/components/schemas/Money' }
+              item:
+                type: object
+                properties:
+                  productId: { type: string }
+                  quantity: { type: integer }
+                  product: { $ref: '#/components/schemas/Product' }
