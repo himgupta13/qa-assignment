@@ -92,8 +92,10 @@ mismatch case is the one deliberate gap.
 
 ## Notes on the UI test
 
-`tests/e2e/golden-path.spec.ts` selectors (`getByLabel`, `getByRole`) are written against the checkout
-form's expected accessible labels, inferred from the frontend's proto-derived field names, and need a final
-pass against the live app to correct any label text mismatches — flagged explicitly rather than presented as
-verified, since it could not be run end-to-end without Docker installed. See the root README for current
+`tests/e2e/golden-path.spec.ts` selectors are taken directly from the frontend's own source — the app's
+`data-cy` test hooks (`src/frontend/utils/enums/CypressFields.ts`) and the real accessible labels in
+`CheckoutForm.tsx` — rather than guessed, and the flow (add-to-cart auto-navigates to `/cart`; placing an
+order navigates to `/checkout`) is confirmed by reading the app's own `Checkout.cy.ts`. That said, this test
+has not yet been *executed* against a live app, since it could not be run end-to-end without Docker
+installed — flagged explicitly rather than presented as verified. See the root README for current
 verification status.
