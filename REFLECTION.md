@@ -1,71 +1,47 @@
 # Reflection
 
-## Which quality risks here would I escalate to engineering leadership, and why those specifically?
+## Which risks I would escalate to engineering leadership, and why those
 
-**1. Checkout has no visible idempotency mechanism.** `PlaceOrderRequest` (see `pb/demo.proto`) carries no
-idempotency key or client-generated request ID. A double-click, a client retry after a slow response, or a
-network blip during payment could plausibly double-charge a customer. I'd escalate this specifically —
-not the flakier flagd fault-injection scenarios — because it's the one risk in this system with direct
-financial and legal exposure, it can't be fully verified black-box (I can observe the API contract has no
-idempotency field, but I can't prove from outside whether the payment service itself deduplicates), and it's
-architectural: fixing it after the fact touches checkout, payment, and probably the frontend's retry logic
-all at once. This is exactly the kind of risk that's cheap to raise now and expensive to discover in
-production.
+**1. Checkout charges the card before it finishes the order, and cannot be retried safely.** In
+`src/checkout/main.go`, `PlaceOrder` charges, then quotes shipping, then empties the cart and discards
+that error. Two consequences, both verified against the live stack: with the cart service failing, the
+customer is charged and confirmed but their cart stays full (TC-CO-05), and two concurrent submissions
+of the same cart both succeed with two order IDs (TC-CO-04). There is no idempotency key in
+`PlaceOrderRequest`. I escalate this above every flagd scenario because it is direct financial exposure,
+it is architectural (checkout, payment and frontend retry logic all move together), and it is cheap to
+raise now and expensive to discover through chargebacks.
 
-**2. Silent reconciliation gap between "what was charged" and "what's displayed."** `checkout.ts` reconstructs
-the order-confirmation view by calling `ProductCatalogService.getProduct` per line item *after* the charge
-has already happened, rather than persisting the price actually charged. If catalog pricing changes between
-add-to-cart and place-order, the confirmation screen can show a different number than what was billed. I'd
-escalate this over, say, the cart's `cartFailure` fault-injection risk because it's not a failure mode at
-all — it's the *correct-looking, everyday* code path producing a customer-facing pricing discrepancy, which
-is a trust and dispute-rate problem, not a bug ticket.
+**2. Error handling in the BFF is absent where it matters.** A missing product returns 500 instead of the
+404 the backend signals; an empty-cart checkout returns 500 instead of a 4xx; an `AddItem` without a
+quantity returns 500. None of these is a backend bug. Each is a Next.js route with no `try/catch` around
+a gRPC call. I raise it to leadership rather than filing three tickets because it is a pattern, and
+patterns need an owner and a convention, not three fixes.
 
-**3. Undocumented behavior contracts across service boundaries in a polyglot system.** Whether repeated
-`AddItem` accumulates or overwrites, what happens on an empty-cart checkout, which currencies get zero-decimal
-treatment — none of this is stated in the proto. In a single-language monolith this kind of thing gets
-discovered by reading the one implementation. Across 8 languages and 20 services, "read the code" doesn't
-scale as a way to resolve ambiguity, and I'd escalate this as a process risk, not a code risk: without a
-convention for documenting cross-service behavioral contracts (not just message shapes), every new service
-added to this system reintroduces the same category of ambiguity I hit three separate times in this
-assignment alone.
+**3. Behavioural contracts between services are undocumented.** Whether a repeated `AddItem` accumulates,
+what a negative delta does, which currencies are zero-decimal, what `cartFailure` actually fails: none of
+it is in the proto. I hit this four times in one assignment. In eight languages "read the other service"
+does not scale. This is a process escalation: message shapes are versioned, behaviour is not.
 
-I would **not** escalate the flagd fault-injection scenarios (`paymentFailure`, `cartFailure`, etc.) to
-leadership — those are already known, named, and instrumented by the team that built this demo. Escalating
-already-tracked risks dilutes attention from the ones that aren't on anyone's radar yet.
+I would not escalate the flagd fault scenarios themselves. They are known, named and instrumented by the
+team that built them.
 
-## With 4 QA engineers, how do you structure ownership across 20 services?
+## Four QA engineers across 20 services
 
-Not one QA engineer per ~5 services — that's organizing around the org chart, not the risk. As laid out in
-`test-strategy.md` §3: **3 engineers own a flow** (Checkout & Payments; Cart & Catalog; everything else —
-ads/recommendations/observability/chatbot, which is real but lower-stakes surface), and **1 rotates as
-automation-platform owner** (CI health, flakiness, test data, the agentic tooling). Flow ownership means a
-QA engineer is accountable for outcomes across however many services that flow touches, and reviews
-automation changes to it, without owning unit tests inside any individual service — that stays with the
-service's engineering team. The platform-owner role rotates quarterly specifically so the CI pipeline and
-shared fixtures don't become one person's tribal knowledge, which is its own risk in a 4-person team (a
-single point of failure is still a point of failure at n=4). Cross-flow contract changes (a proto field that
-several flows depend on) require sign-off from every pod that touches it, enforced by the contract-test gate
-described in `test-strategy.md` §4 — I'd rather that be a CI gate than a "please remember to loop in the
-other pod" norm, because norms don't survive someone being on vacation.
+Not five services each. Three engineers own a flow: Checkout and payments; Cart and catalog; Everything
+else. One rotates quarterly as platform owner: CI, flakiness, fixtures, test data, the agentic tooling.
+Flow ownership means accountability for an outcome across however many services it touches, and review
+rights on automation that touches it, without owning unit tests inside any service. Cross-flow proto
+changes need every affected flow's sign-off, enforced by the contract gate rather than by remembering to
+ask. The rotation exists because at n=4 a single point of failure is still a single point of failure.
 
-## What do you build in week 1 vs. month 3?
+## Week 1 vs. month 3
 
-**Week 1:** Get the deterministic, fast signal in place first — the integration/API suite against the three
-highest-risk flows (this repo's `automation/`), wired into CI as a blocking PR gate, running against a real
-`docker compose up` stack with no mocks. I would *not* start with E2E or a broad unit-test coverage push:
-E2E is slow to get stable and unit tests are owned by service teams, not QA, on day one. I'd also spend part
-of week 1 just cataloguing the undocumented behavior gaps (like the three above) and getting explicit
-answers from engineering — cheap to do early, expensive to discover mid-quarter when a "regression" turns
-out to be a test asserting the wrong assumption.
+**Week 1.** The fast deterministic gate: the API suite in `automation/` for the three flows, blocking on
+PRs against a real `docker compose` stack. Not E2E, not a unit-coverage push. And a written list of the
+undocumented behaviours above, with answers from engineering, before anyone builds tests on assumptions.
 
-**Month 3:** By now the fast gate should be trusted enough that people don't route around it, so the
-investment shifts to (a) the contract-test layer catching cross-service proto breakage before it reaches
-integration tests at all, (b) a working flakiness-quarantine process with real data behind it (which tests
-actually flake, not which ones we assume might), and (c) the agentic tooling in `agentic/` graduated from
-prototype to something the automation-platform owner actually runs against new specs as services evolve —
-not because "use AI" is a month-3 goal in itself, but because by month 3 the team should know precisely
-where hand-written test generation is the bottleneck (which flows, which kinds of tests) and can point the
-agent at that specific gap instead of everything at once. I would explicitly *not* aim for "full automation
-coverage of all 20 services" as a month-3 deliverable — per `test-strategy.md` §1, several of those services
-don't carry enough risk to justify the investment, and chasing coverage-as-a-number is the metric mistake
-called out in `test-strategy.md` §5.
+**Month 3.** The gate is trusted, so the investment moves to: the contract layer (`buf breaking` plus
+OpenAPI validation) so proto breakage fails before integration runs; a flakiness quarantine driven by real
+per-test data; and the agentic pipeline in `agentic/` run by the platform owner against new specs, pointed
+at whichever flow hand-written generation has proven to be the bottleneck. Not "full coverage of 20
+services." Several of them do not carry enough risk to justify it.

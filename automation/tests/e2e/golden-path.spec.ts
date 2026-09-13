@@ -26,6 +26,14 @@ import { test, expect } from '@playwright/test';
 //    files after this locator resolved to 0 elements against the live app. Asserting on
 //    real rendered content (heading text + the actual product name) instead of a
 //    data-cy hook that turned out to not exist on this page.
+// 3. REAL FINDING (new): the confirmation page also renders an Ad/Recommendations section
+//    that can independently reference the same product's name in a link/paragraph (e.g.
+//    "Solar System Color Imager for sale. 30% off."), so a bare getByText(productName)
+//    intermittently hits Playwright's strict-mode violation (2 matches) depending on which
+//    product the golden path happens to pick and what gets recommended alongside it. The
+//    order-confirmation item name is specifically rendered as a heading
+//    (S.ItemName -> <h5>), so scoping the assertion to that role disambiguates it from the
+//    ad copy regardless of which product/recommendation combination shows up.
 test('browse, add a product to the cart, and complete checkout', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('[data-cy=home-page]')).toBeVisible({ timeout: 15_000 });
@@ -49,5 +57,5 @@ test('browse, add a product to the cart, and complete checkout', async ({ page }
   await page.waitForURL(/\/checkout/, { timeout: 15_000 });
   await expect(page.getByRole('heading', { name: 'Your order is complete!' })).toBeVisible();
   await expect(page.getByText('Order ID:')).toBeVisible();
-  await expect(page.getByText(productName!.trim())).toBeVisible();
+  await expect(page.getByRole('heading', { name: productName!.trim() })).toBeVisible();
 });

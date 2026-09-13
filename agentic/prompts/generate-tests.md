@@ -42,7 +42,9 @@ For each operation, generate:
 
 ## Output
 
-Write the suite to `agentic/generated/<operation-group>.spec.ts`, using the same Playwright
+Write the suite to `agentic/generated/<operation-group>.spec.ts` (the eval harness picks up any
+`agentic/generated*/` directory, so a differently named output directory is still evaluated),
+using the same Playwright
 `request` fixture pattern as `automation/tests/api/*.spec.ts` (for consistency with the
 human-written suite this is meant to sit alongside). Target `BASE_URL` via
 `process.env.BASE_URL`, defaulting to `http://localhost:4000` (the eval mock server), so the

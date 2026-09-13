@@ -1,157 +1,132 @@
-# Agent Design — OpenAPI-Driven Test Generation
+# Agent Design: OpenAPI-driven test generation
 
 ## Which option, and why
 
-**Test generation.** I chose this over CI triage or self-healing because it's the one where "the agent does
-real work with real autonomy" is falsifiable in a way I can actually build and check in a single session:
-generate a test suite from a contract, then mechanically prove whether the suite is worth anything. CI
-triage and self-healing both need a running system with a real failure history to be more than a toy; test
-generation from a static spec doesn't, which made it the right fit for the time available here.
+Test generation. Of the three options it is the one where "did the agent do real work" can be
+checked mechanically: generate a suite from a contract, then prove whether the suite catches
+anything. CI triage and self-healing both need a failure history to be more than a toy.
 
 ## The workflow
 
 ```
- ┌─────────────────────────┐
- │ agentic/openapi/         │  hand-written OpenAPI spec for the frontend BFF's
- │  frontend-api.yaml       │  checkout/cart/product-catalog surface (the app itself
- └───────────┬──────────────┘  ships no OpenAPI — only .proto — so this file is itself
-             │                 a translation step a human did once, up front)
-             ▼
- ┌─────────────────────────┐
- │ agentic/prompts/         │  reusable prompt: what to generate per operation, what
- │  generate-tests.md       │  NOT to invent, where output goes, and "don't stop until
- └───────────┬──────────────┘  the eval passes"
-             │
-             ▼  (agent reads spec + prompt + existing test-cases/ and fixtures/)
- ┌─────────────────────────┐
- │  AGENT                    │  Claude Code, this session, operating on this repo
- │  (Claude Code CLI)        │  directly — reads files, writes files, runs commands.
- └───────────┬──────────────┘  See transcripts/ for the literal record of this.
-             │
-             ▼
- ┌─────────────────────────┐
- │ agentic/generated/        │  the output: products.spec.ts, cart.spec.ts,
- │  *.spec.ts                │  checkout.spec.ts (Playwright/TS)
- └───────────┬──────────────┘
-             │
-             ▼
- ┌───────────────────────────────────────────────────────────────┐
- │ EVAL LAYER (agentic/eval/run-eval.js) — three gates, in order   │
- │                                                                  │
- │ 1. Spec conformance (static) — every HTTP call in the generated │
- │    suite must match a path+method that actually exists in the   │
- │    OpenAPI spec. Catches hallucinated endpoints before we ever  │
- │    execute anything.                                            │
- │                                                                  │
- │ 2. TypeScript compile — catches invalid/unsafe generated code.  │
- │                                                                  │
- │ 3. Mutation kill rate — run the SAME generated suite against    │
- │    two versions of a mock server implementing the spec:         │
- │      - FAITHFUL: correct implementation → suite must ALL PASS   │
- │      - MUTATED: 2 deliberately injected bugs → suite must FAIL  │
- │        at least one test, or it isn't testing anything real     │
- └───────────┬──────────────────────────────────────────────────────┘
-             │
-             ▼  eval report (pass/fail per gate, which mutations were/weren't caught)
- ┌─────────────────────────┐
- │  HUMAN REVIEW GATE        │  merges into automation/, revises the spec/prompt, or
- │  (QA engineer)             │  sends the agent back with the eval failure as new input
- └─────────────────────────┘
+ ┌──────────────────────────┐
+ │ openapi/frontend-api.yaml │  hand-written OpenAPI for the frontend BFF's cart/checkout/
+ └────────────┬─────────────┘  catalog surface (the app ships .proto only, no OpenAPI)
+              │
+              ▼
+ ┌──────────────────────────┐
+ │ prompts/generate-tests.md │  what to generate per operation, what NOT to invent,
+ └────────────┬─────────────┘  where output goes, "run the eval, don't stop until it passes"
+              │
+              ▼  agent reads spec + prompt + test-cases/ + automation/fixtures/
+ ┌──────────────────────────┐
+ │  AGENT (Claude Code CLI)  │  reads files, writes files, runs commands in this repo
+ └────────────┬─────────────┘  transcripts/ is the literal record
+              │
+              ▼
+ ┌──────────────────────────┐
+ │ generated/*.spec.ts       │  products, cart, checkout (Playwright/TS)
+ └────────────┬─────────────┘
+              │
+              ▼
+ ┌─────────────────────────────────────────────────────────────────┐
+ │ EVAL (eval/run-eval.js), three gates, cheapest first              │
+ │ 1. Spec conformance: every request.<method>('<path>') in the     │
+ │    generated code must match a path+method in the spec.          │
+ │ 2. TypeScript compile.                                            │
+ │ 3. Mutation kill: run the suite against eval/mock-server.js in   │
+ │    MODE=faithful (must all pass) then MODE=mutated, which has 3  │
+ │    injected bugs (must fail somewhere, or the suite tests        │
+ │    nothing).                                                      │
+ └────────────┬────────────────────────────────────────────────────┘
+              │
+              ▼  eval report
+ ┌──────────────────────────┐
+ │  HUMAN REVIEW             │  promote into automation/, fix the spec, fix the prompt,
+ └──────────────────────────┘  or send the agent back with the eval output as input
 ```
 
-## How do you know the output is correct? (the eval layer, in detail)
+## The three injected bugs
 
-"Correct" for a generated test doesn't mean "looks like a test" — it means "fails when the thing it's
-testing is actually broken." That's what Gate 3 checks, and I built it as two intentionally-broken variants
-of the same mock server (`agentic/eval/mock-server.js`, `MODE=mutated`):
+1. **JPY rounding.** Mutated mode returns non-zero `nanos` for JPY, a zero-decimal currency.
+2. **Cart not cleared after checkout.** Mutated `/checkout` succeeds but leaves the cart populated.
+3. **Quantity overwrite.** Mutated `POST /cart` overwrites quantity on a repeated add instead of accumulating.
 
-1. **JPY (zero-decimal currency) rounding bug** — mutated mode returns a non-zero `nanos` for JPY, which is
-   ISO-4217-invalid. This mirrors the exact risk called out in `test-cases/03-product-catalog-currency.md`
-   TC-PC-01, found independently before I built the mock — the eval's injected bug and the manual test
-   case's risk both trace back to the same real property of the system.
-2. **Cart-not-cleared-after-checkout bug** — mutated mode's `/checkout` succeeds but never empties the
-   cart. This is the property TC-CO-01 in `test-cases/01-checkout-flow.md` calls out as required.
-3. **Quantity-overwrite-instead-of-accumulate bug** — mutated mode's `POST /cart` overwrites quantity on a
-   repeated add instead of accumulating it (the TC-CT-01 ambiguity).
+Each maps to a risk in `test-cases/`: TC-PC-01, TC-CO-01, TC-CT-02.
 
-**Running the eval (`node agentic/eval/run-eval.js`) against what I actually generated this session:**
-- Gate 1 (conformance): **passed** — 13 generated tests, all calls trace to a spec'd operation.
-- Gate 2 (typecheck): **passed**.
-- Gate 3a (faithful mock): **passed** — 12/13 passed, 1 skipped (the 422-payment-decline test is `test.skip`
-  by design, since the mock has no flagd equivalent — see the comment in `checkout.spec.ts`).
-- Gate 3b (mutated mock): **1 of 13 tests failed** — the cart-clearing test (`after a successful order, the
-  cart for that user is empty`) caught bug #2.
+## What actually happened: two runs
 
-**Bug #3 (quantity overwrite) was NOT caught, and I'm reporting that rather than quietly fixing the test
-until it passed.** The generated test for repeated-add only asserts `lineItems).toHaveLength(1)` — true
-whether the server overwrites or accumulates quantity. It doesn't assert the resulting *quantity value*,
-because the prompt explicitly told the agent not to assert undocumented behavior, and neither the OpenAPI
-spec nor the proto documents whether repeated `AddItem` accumulates. That instruction produced a *correct*
-but *incomplete* test — exactly the tradeoff a human reviewer needs to see and decide on, not something an
-eval script should silently paper over by loosening the prompt until everything passes. Bug #1 (JPY
-rounding) also went uncaught in this run, for the same root cause: `products.spec.ts`'s nanos boundary test
-checks the field stays in-range, not that it's specifically zero for a zero-decimal currency, again because
-the spec doesn't state which currencies are zero-decimal. **Real mutation-kill rate this run: 1 of 3 injected
-bugs caught by 1 of 13 tests.** That's the honest number, and it's the strongest evidence in this repo for
-why "generate tests from a spec" still needs a human in the loop — a spec that's silent on a behavior
-produces an agent that's silent on it too.
+**Run 1** (7 Sep, session `ca468bbc`, the same session that built the harness). 13 tests.
+Faithful mock: 12 pass, 1 skipped. Mutated mock: 1 failure, the cart-clearing test. Bugs 1 and 3 were
+not caught. The repeated-add test asserted only that one line item existed, which is true whether the
+server overwrites or accumulates. The prompt told the agent not to assert undocumented behaviour, and
+the spec is silent on accumulation, so the agent was silent too.
 
-## Update: run against the real app (not the mock) caught a real bug
+**Run 2** (13 Sep, session `f4cf2bd9`). A fresh session was given the prompt file verbatim and nothing
+else. The agent read the spec, fixtures and existing suite, wrote 23 tests to `generated-test/`, changed
+the eval config to scan any `generated*/` directory, ran the eval itself, and reported. Results from the
+files as they are now (`npm run eval`, 13 Sep):
 
-Docker finished installing partway through this assignment, so once `docker compose up` was live I re-ran
-the exact same generated suite with `BASE_URL=http://localhost:8080` instead of the mock. 11 of 13 passed
-— and the one real failure is the single most convincing result in this repo:
+| Gate | Result |
+|---|---|
+| 1 Conformance | pass, 3 files |
+| 2 Typecheck | pass |
+| 3a Faithful mock | 21 pass, 2 skipped, 0 fail |
+| 3b Mutated mock | 2 fail: cart-not-cleared, quantity-overwrite |
 
-```
-GET /products/{productId} › a nonexistent productId returns the documented 404
-Expected: 404
-Received: 500
-```
+Kill rate 2 of 3. Run 2 asserted the accumulated value (1 + 2 = 3) explicitly and flagged it in a comment
+as a cross-operation inference a human should confirm. Bug 1 (JPY) is still not caught: the spec never
+says which currencies are zero-decimal, so the agent wrote an observation with an annotation rather than a
+hard assertion. That is the correct reading of the prompt, and it is also a gap. Fixing it means fixing the
+spec, not loosening the prompt.
 
-I traced this independently by reading source, not from the test failure — `product-catalog`'s `GetProduct`
-(`main.go`) correctly returns gRPC `codes.NotFound` for a missing ID, but the frontend BFF route
-(`pages/api/products/[productId]/index.ts`) has no error handling around that call at all, so the rejection
-becomes an unhandled exception and Next.js's default 500. **The agent-generated test caught this on its own,
-against the real app, with no human pointing it at this specific case** — it's exactly the kind of contract
-violation this whole pipeline exists to catch: the spec (written from reading the intended backend contract)
-says 404, the real system says 500, and the generated suite is the thing that noticed. This is now also
-pinned as a regression test in `automation/tests/api/product-catalog.spec.ts` (asserting the *current*, buggy
-500, with a comment pointing at the real fix location) — see that file and `test-strategy.md` for how a
-manual/automated pair handles a confirmed bug versus an open question.
+After run 2, the first run's `generated/` was replaced with the second run's output by hand (`mv`), outside
+any agent session. The transcripts README says so, and the file headers carry a provenance note.
 
-## What the agent decides vs. what stays with a human
+## Run against the real app
 
-**The agent decides:**
-- Which operations/fields in the spec need a test, and what the boundary values are (derived mechanically
-  from `minimum`/`maximum`/`required`/`enum` in the schema).
-- How to phrase and structure each test, and which existing conventions (`fixtures/testData.ts`, the
-  `request` fixture pattern) to reuse instead of reinventing.
-- When to flag a gap instead of guessing — e.g. both cases above, and the payment-decline test it correctly
-  marked `.skip` rather than either fabricating a flagd equivalent in the mock or silently dropping the test.
+Same files, `BASE_URL=http://localhost:8080` against `docker compose up` (13 Sep): 19 pass, 2 skipped,
+2 fail. Both failures are real bugs, not test defects.
 
-**A human decides:**
-- Whether the OpenAPI spec itself is right and complete — I wrote `frontend-api.yaml` by hand from reading
-  the frontend's source, and it's the single biggest point of failure in this whole pipeline: an agent
-  generating a large, confident-looking test suite from an incomplete spec is worse than no suite, because
-  it looks like coverage. This is why the spec lives in version control and gets reviewed like any other
-  contract, not regenerated implicitly.
-- Whether an eval failure (or an eval *pass* with a gap like bug #3 above) means "fix the prompt," "fix the
-  spec," "fix the test by hand," or "this behavior genuinely needs a human decision before any test can be
-  written" — the eval tells you something is incomplete, not what to do about it.
-- The merge decision into `automation/`. Nothing in `agentic/generated/` is wired into CI; it's a prototype
-  output sitting next to its own eval report specifically so a reviewer can see the suite and the evidence
-  for it side by side before deciding to promote it.
-- Any assertion the eval layer itself can't check — e.g., whether the *values* returned are business-correct
-  (I can check a currency conversion is internally consistent; I can't check it matches the actual bank rate
-  the team intends without an external oracle, same limitation called out in `automation-strategy.md`).
+- `GET /products/{id}` for a nonexistent ID returns 500, not the documented 404. `product-catalog`
+  returns gRPC `NotFound`; the BFF route in `pages/api/products/[productId]/index.ts` has no error
+  handling and converts it to an unhandled 500. Pinned in `automation/tests/api/product-catalog.spec.ts`.
+- `POST /cart` with the required `quantity` field omitted returns 500 instead of a 4xx. New finding from
+  this run, not yet pinned in `automation/`.
 
-## Honest limitations
+Neither was pointed at by a human. The spec said 404 and "quantity required"; the generated tests checked
+those; the live system disagreed.
 
-- The mock server is a hand-written stand-in for the real backend, not the real backend. Gate 3's mutation
-  tests prove the generated suite can detect *the specific bugs I injected into the mock*, not that it would
-  catch every real regression in the actual Go/gRPC checkout service. Running `agentic/generated/*.spec.ts`
-  against the real `docker compose up` stack (`BASE_URL=http://localhost:8080`) is the real validation, and
-  is exactly why the prompt template targets `BASE_URL` as an env var instead of hardcoding the mock.
-- One spec, three files, ~13 generated tests. I did not try to scale this to all 20 services in the time
-  available — the honest scope here is "does this pipeline work at all, end to end, provably," not
-  "here is a complete generated regression suite."
+## What the agent decides vs. what a human decides
+
+**Agent:**
+- Which operations and fields get a test, and the boundary values, derived from `required`, `minimum`,
+  `maximum`, `enum` in the schema.
+- Test structure and which existing fixtures to reuse.
+- When to flag instead of guess: the payment-decline 422 it marked `test.skip` because the mock has no
+  fault path, the empty-cart 500 it declined to treat as spec-derived, the JPY observation.
+
+**Human:**
+- Whether the spec is right. `frontend-api.yaml` was written by hand from the BFF source and is the
+  single biggest point of failure. A confident suite from an incomplete spec looks like coverage and is not.
+- What an eval result means: fix the prompt, fix the spec, fix the test, or "this behaviour needs a
+  product decision first."
+- Promotion into `automation/`. Nothing in `generated/` is wired to CI.
+- Anything the eval cannot check, such as whether a conversion rate is the one the business intends.
+
+## Limitations I would fix next
+
+- **The agent edited its own eval harness** in run 2 (test match, tsconfig, conformance check) to
+  accommodate its output directory. The result was benign and it reported the change, but a production
+  pipeline should make `eval/` read-only to the agent.
+- **Gate 3b passes on a single failure.** A 1 of 3 kill rate passes. It should report a per-mutation kill
+  matrix, one mutation per pass, with a threshold.
+- **7 of the 23 tests cannot kill a mutation.** Five assert only "not a 5xx" and annotate; two are skipped.
+  An extra gate should reject tests with no hard assertion.
+- **Conformance is a regex** over source text. It misses URLs built from variables and never validates the
+  response body against the schema. A JSON-schema check of responses is the obvious next gate.
+- **The mock is hand-written from the same spec by the same agent.** Generating the faithful mock from the
+  spec with Prism, and injecting mutations via a proxy, would take the author out of the oracle.
+- **No orchestrator.** The loop "generate, eval, feed failures back" is a person re-prompting. A script
+  wrapping `claude -p` with a retry budget would make the pipeline reproducible for someone who is not me.
+- One spec, three files, one service. The point was to prove the loop end to end, not to cover 20 services.

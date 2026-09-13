@@ -1,43 +1,44 @@
-# QA Engineering Manager Assignment — OpenTelemetry Astronomy Shop
+# QA Engineering Manager Assignment: OpenTelemetry Astronomy Shop
 
 Submission for the ArmorCode QA Engineering Manager AI Assignment, against the
 [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) ("Astro Shop").
 
-## Approach, in short
+## Approach
 
-I focused depth over breadth on the three flows that carry the most real quality risk in this system —
-**Checkout/Place Order, Cart, and Product Catalog & Currency Conversion** — rather than spreading thin
-manual-test effort across all 20 services. The reasoning for that call is in [`test-strategy.md`](test-strategy.md)
-§1. Everywhere I made a judgment call on ambiguous or undocumented behavior (does repeated add-to-cart
-accumulate quantity? what should an empty-cart checkout do?), I documented the reasoning inline rather than
-silently picking an answer — see the "Quality risk to flag before ship" callouts in
-[`test-cases/`](test-cases/) and the "Honest limitations" section of [`agentic/AGENT-DESIGN.md`](agentic/AGENT-DESIGN.md).
+Depth over breadth. I picked the three flows that carry real risk in this system, **Checkout, Cart, and
+Catalog/Currency**, wrote detailed manual cases for them, automated what was automatable against the live
+stack, and used the rest of the time on an agentic test-generation pipeline with an eval layer that can
+tell a useful generated suite from a useless one.
 
-The six required sections:
+Running everything against the real app, not just writing it, is what produced the findings that matter:
+five confirmed application bugs, including a checkout that charges the card and then leaves the cart full
+when the cart service fails, and two concurrent checkouts that both succeed. Where behaviour was
+undocumented I wrote the ambiguity down instead of guessing; see the "Quality risk to flag" notes in
+`test-cases/` and the limitations section of `agentic/AGENT-DESIGN.md`.
 
-| Section | What's in it |
+| Section | Contents |
 |---|---|
-| [`test-strategy.md`](test-strategy.md) | Risk analysis, test pyramid, QA ownership model, CI gates, metrics |
-| [`test-cases/`](test-cases/) | 11 detailed manual test cases across the 3 highest-risk flows |
-| [`automation/`](automation/) | Playwright/TypeScript suite automating 10 of those 11 cases (91%) + one E2E golden path |
-| [`automation-strategy.md`](automation-strategy.md) | Tool choice, team structure, CI wiring, flakiness handling |
-| [`agentic/`](agentic/) | An OpenAPI-driven test-generation agent, with a real eval layer (spec conformance + mutation testing against faithful vs. deliberately-broken mock implementations) |
-| [`REFLECTION.md`](REFLECTION.md) | Escalation risks, 4-engineer ownership model, week-1 vs. month-3 |
+| [`test-strategy.md`](test-strategy.md) | Risk analysis, pyramid, ownership model, CI gates, metrics |
+| [`test-cases/`](test-cases/) | 18 manual cases across the 3 flows, each with preconditions, steps, edge cases, risks to flag |
+| [`automation/`](automation/) | Playwright/TypeScript suite: 15 of 18 cases automated, 5 confirmed bugs pinned, one E2E golden path |
+| [`automation-strategy.md`](automation-strategy.md) | Tool choice, team structure, CI wiring, flakiness, test data |
+| [`agentic/`](agentic/) | OpenAPI-driven test generation with a three-gate eval (spec conformance, typecheck, mutation kill against faithful vs. mutated mocks), plus both generation-run transcripts |
+| [`REFLECTION.md`](REFLECTION.md) | Escalations, 4-engineer ownership, week 1 vs. month 3 |
 
-## Setup — running the app
+## Running the app
 
 ```bash
+# from this repo's root
 git clone --depth=1 https://github.com/open-telemetry/opentelemetry-demo
 cd opentelemetry-demo
 docker compose up --wait
 ```
 
-Frontend at `http://localhost:8080`. Feature-flag / fault-injection UI at `http://localhost:8080/feature`.
+Frontend at `http://localhost:8080`. Feature flags at `http://localhost:8080/feature`.
 
-This repo assumes `opentelemetry-demo/` is cloned as a **sibling directory inside this repo** (i.e.
-`qa-em-assignment/opentelemetry-demo/`) — that's the path the automation and agentic fixtures reference. It
-is not committed here (it's a large, separately-maintained CNCF project); clone it fresh with the command
-above from the repo root.
+The demo is cloned into `qa-em-assignment/opentelemetry-demo/` and is gitignored. The automation suite
+does **not** depend on that clone being present (the one proto it needs is vendored under
+`automation/protos/`); the location only matters for the optional gRPC port lookup below.
 
 ## Running the automation
 
@@ -45,37 +46,43 @@ above from the repo root.
 cd automation
 npm install
 npx playwright install --with-deps chromium
+npm test              # API + E2E against http://localhost:8080
+```
+
+Override the target with `BASE_URL=...`. The four gRPC search tests are skipped unless you pass the
+catalog's published port:
+
+```bash
+export PRODUCT_CATALOG_GRPC_ADDR=$(docker compose -f ../opentelemetry-demo/compose.yaml port product-catalog 3550 | sed 's/0.0.0.0/localhost/')
 npm test
 ```
 
-See [`automation/README.md`](automation/README.md) for what's automated, what isn't, and why, plus the
-gRPC-specific setup step for the one test that needs it.
+See [`automation/README.md`](automation/README.md) for what is automated, what is not and why, and the
+live findings.
 
 ## Running the agentic eval
 
 ```bash
 cd agentic
 npm install
-npm run eval
+npm run eval          # no Docker needed; runs against the bundled mock server
 ```
 
-This runs entirely against a self-contained mock server (`agentic/eval/mock-server.js`) — no Docker
-required — and reports whether the AI-generated test suite in `agentic/generated/` actually catches
-deliberately injected bugs, not just whether it runs. See `agentic/AGENT-DESIGN.md` for the full pipeline
-and an honest accounting of what it did and didn't catch.
+Reports whether the generated suite catches deliberately injected bugs, not just whether it runs. Point
+the same suite at the live app with `BASE_URL=http://localhost:8080 npx playwright test` to reproduce the
+two real bugs it found. Pipeline, prompts, eval design and results are in
+[`agentic/AGENT-DESIGN.md`](agentic/AGENT-DESIGN.md).
 
-## The agent transcript
+## Agent transcripts
 
-Per the assignment's submission requirements, the full transcript of the coding agent session used to build
-this repo (Claude Code, run against this local codebase — not a web interface) is included at
-[`agentic/transcripts/`](agentic/transcripts/), exported as the raw session JSONL.
+Both Claude Code sessions that built and ran the agentic pipeline are in
+[`agentic/transcripts/`](agentic/transcripts/) as raw, unedited JSONL exports. The README there says
+which session did what, and names the one step (a manual `mv`) that is not in either.
 
-## A note on tooling
+## Tooling note
 
-Every file in this repo — the strategy docs, the test cases, the automation, the agentic pipeline and its
-generated output — was produced in one continuous Claude Code CLI session operating directly on this
-codebase and on a local clone of the demo app: reading source files (protos, frontend API routes, seed
-data, an existing Cypress suite discovered along the way), running commands (`npm install`, `tsc`,
-`playwright test`, the eval harness), and iterating based on real output (see `agentic/AGENT-DESIGN.md` for
-a concrete example — an eval run that caught one injected bug and missed another, reported as-is). The
-transcript in `agentic/transcripts/` is that session, unedited.
+Claude Code (the CLI) was the coding agent throughout: it cloned and ran the demo, read the frontend and
+service source, ran the suites, and iterated on real output. The judgement calls in the strategy, test
+cases and reflection are mine; the transcripts show where the agent's first attempt was wrong (a flag
+that did not do what its name said, a selector that did not exist, an assumed call order in checkout that
+was backwards) and how each was corrected by reading the source and running the code.

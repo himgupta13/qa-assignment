@@ -6,7 +6,7 @@
       "test"
     ],
     "configFile": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/playwright.config.ts",
-    "rootDir": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated",
+    "rootDir": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic",
     "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
@@ -30,10 +30,10 @@
         },
         "id": "",
         "name": "",
-        "testDir": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated",
+        "testDir": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic",
         "testIgnore": [],
         "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+          "generated*/**/*.spec.ts"
         ],
         "timeout": 15000
       }
@@ -65,16 +65,16 @@
   },
   "suites": [
     {
-      "title": "cart.spec.ts",
-      "file": "cart.spec.ts",
+      "title": "generated/cart.spec.ts",
+      "file": "generated/cart.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "POST /cart",
-          "file": "cart.spec.ts",
-          "line": 9,
+          "title": "POST /cart (addToCart)",
+          "file": "generated/cart.spec.ts",
+          "line": 14,
           "column": 6,
           "specs": [
             {
@@ -93,12 +93,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 43,
+                      "duration": 73,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.390Z",
+                      "startTime": "2026-09-13T12:57:11.123Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -106,9 +106,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "1981448f0b79506fb670-15b469ade23c874e7953",
-              "file": "cart.spec.ts",
-              "line": 11,
+              "id": "5e8c823a393a3016f237-dcf74e43139cd1588a7b",
+              "file": "generated/cart.spec.ts",
+              "line": 16,
               "column": 7
             },
             {
@@ -127,12 +127,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 16,
+                      "duration": 6,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.457Z",
+                      "startTime": "2026-09-13T12:57:11.231Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -140,14 +140,102 @@
                   "status": "expected"
                 }
               ],
-              "id": "1981448f0b79506fb670-e279ef1a0c242678a671",
-              "file": "cart.spec.ts",
-              "line": 28,
+              "id": "5e8c823a393a3016f237-3882d051041e1fbf5853",
+              "file": "generated/cart.spec.ts",
+              "line": 31,
               "column": 7
             },
             {
-              "title": "adding the same product twice does not produce two separate line items",
+              "title": "quantity below the spec minimum (0) is rejected, or flagged if silently accepted",
               "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [
+                    {
+                      "type": "quality-risk",
+                      "description": "POST /cart accepted quantity=0 with a 200, despite CartItem.quantity declaring minimum: 1 in the spec — no validation rejects an out-of-bounds quantity."
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 28,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.252Z",
+                      "annotations": [
+                        {
+                          "type": "quality-risk",
+                          "description": "POST /cart accepted quantity=0 with a 200, despite CartItem.quantity declaring minimum: 1 in the spec — no validation rejects an out-of-bounds quantity."
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5e8c823a393a3016f237-7e8bef448e95533218f2",
+              "file": "generated/cart.spec.ts",
+              "line": 45,
+              "column": 7
+            },
+            {
+              "title": "omitting the required CartItem.quantity field does not silently corrupt the cart",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [
+                    {
+                      "type": "quality-risk",
+                      "description": "POST /cart with no `quantity` on the CartItem (a required field per the spec) was accepted with a 200 and produced a line item with quantity=undefined instead of a validation error."
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.289Z",
+                      "annotations": [
+                        {
+                          "type": "quality-risk",
+                          "description": "POST /cart with no `quantity` on the CartItem (a required field per the spec) was accepted with a 200 and produced a line item with quantity=undefined instead of a validation error."
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5e8c823a393a3016f237-cd48a36c2f219031d11e",
+              "file": "generated/cart.spec.ts",
+              "line": 70,
+              "column": 7
+            },
+            {
+              "title": "adding the same product twice accumulates quantity (1 + 2 = 3), not overwrite",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -160,31 +248,61 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 5,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 20,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m3\u001b[39m\nReceived: \u001b[31m2\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m3\u001b[39m\nReceived: \u001b[31m2\u001b[39m\n    at /Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/cart.spec.ts:112:35",
+                        "location": {
+                          "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/cart.spec.ts",
+                          "column": 35,
+                          "line": 112
+                        },
+                        "snippet": "  110 |     const lineItems = cart.items.filter((i: any) => i.productId === PRODUCT_IDS.SOLAR_SYSTEM_IMAGER);\n  111 |     expect(lineItems).toHaveLength(1);\n> 112 |     expect(lineItems[0].quantity).toBe(3);\n      |                                   ^\n  113 |   });\n  114 | });\n  115 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/cart.spec.ts",
+                            "column": 35,
+                            "line": 112
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m3\u001b[39m\nReceived: \u001b[31m2\u001b[39m\n\n  110 |     const lineItems = cart.items.filter((i: any) => i.productId === PRODUCT_IDS.SOLAR_SYSTEM_IMAGER);\n  111 |     expect(lineItems).toHaveLength(1);\n> 112 |     expect(lineItems[0].quantity).toBe(3);\n      |                                   ^\n  113 |   });\n  114 | });\n  115 |\n    at /Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/cart.spec.ts:112:35"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.481Z",
+                      "startTime": "2026-09-13T12:57:11.312Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/test-results/generated-cart-POST-cart-a-32237-uantity-1-2-3-not-overwrite/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/cart.spec.ts",
+                        "column": 35,
+                        "line": 112
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "1981448f0b79506fb670-1cb8bd4f2b4aee7dedff",
-              "file": "cart.spec.ts",
-              "line": 44,
+              "id": "5e8c823a393a3016f237-c6269f2b724477225aa3",
+              "file": "generated/cart.spec.ts",
+              "line": 101,
               "column": 7
             }
           ]
         },
         {
-          "title": "GET /cart",
-          "file": "cart.spec.ts",
-          "line": 56,
+          "title": "GET /cart (getCart)",
+          "file": "generated/cart.spec.ts",
+          "line": 116,
           "column": 6,
           "specs": [
             {
@@ -200,15 +318,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 4,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5,
+                      "duration": 45,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.491Z",
+                      "startTime": "2026-09-13T12:57:11.657Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -216,17 +334,61 @@
                   "status": "expected"
                 }
               ],
-              "id": "1981448f0b79506fb670-e63b1e2e10ae977dfc3c",
-              "file": "cart.spec.ts",
-              "line": 58,
+              "id": "5e8c823a393a3016f237-0da40987d919ba20c708",
+              "file": "generated/cart.spec.ts",
+              "line": 118,
+              "column": 7
+            },
+            {
+              "title": "omitting the required sessionId query param is flagged if silently accepted",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [
+                    {
+                      "type": "quality-risk",
+                      "description": "GET /cart with no sessionId (declared required: true in the spec) returned 200 instead of a validation error — worth confirming this is intentional (e.g. treated as an anonymous/empty cart) rather than a missed required-parameter check."
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.731Z",
+                      "annotations": [
+                        {
+                          "type": "quality-risk",
+                          "description": "GET /cart with no sessionId (declared required: true in the spec) returned 200 instead of a validation error — worth confirming this is intentional (e.g. treated as an anonymous/empty cart) rather than a missed required-parameter check."
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "5e8c823a393a3016f237-d3ad82addb4117fd59b1",
+              "file": "generated/cart.spec.ts",
+              "line": 130,
               "column": 7
             }
           ]
         },
         {
-          "title": "DELETE /cart",
-          "file": "cart.spec.ts",
-          "line": 66,
+          "title": "DELETE /cart (emptyCart)",
+          "file": "generated/cart.spec.ts",
+          "line": 146,
           "column": 6,
           "specs": [
             {
@@ -242,15 +404,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 4,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 18,
+                      "duration": 22,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.503Z",
+                      "startTime": "2026-09-13T12:57:11.742Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -258,9 +420,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "1981448f0b79506fb670-2412dbdf21acc388a170",
-              "file": "cart.spec.ts",
-              "line": 68,
+              "id": "5e8c823a393a3016f237-8704e4c735f19f4cf83e",
+              "file": "generated/cart.spec.ts",
+              "line": 148,
               "column": 7
             }
           ]
@@ -268,20 +430,20 @@
       ]
     },
     {
-      "title": "checkout.spec.ts",
-      "file": "checkout.spec.ts",
+      "title": "generated/checkout.spec.ts",
+      "file": "generated/checkout.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "POST /checkout",
-          "file": "checkout.spec.ts",
-          "line": 29,
+          "title": "POST /checkout (placeOrder)",
+          "file": "generated/checkout.spec.ts",
+          "line": 8,
           "column": 6,
           "specs": [
             {
-              "title": "a valid order returns 200 with the OrderResult required shape",
+              "title": "a valid order returns 200 with the OrderResult shape",
               "ok": true,
               "tags": [],
               "tests": [
@@ -296,12 +458,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 41,
+                      "duration": 75,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.392Z",
+                      "startTime": "2026-09-13T12:57:11.130Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -309,9 +471,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "25ab1bfc84c57e3e3a45-dbe8f574ad36959e5ed8",
-              "file": "checkout.spec.ts",
-              "line": 32,
+              "id": "ad2cb6f597d64bc543c4-11734d4eaa4f377b1c5a",
+              "file": "generated/checkout.spec.ts",
+              "line": 16,
               "column": 7
             },
             {
@@ -330,56 +492,56 @@
                       "workerIndex": 1,
                       "parallelIndex": 1,
                       "status": "failed",
-                      "duration": 23,
+                      "duration": 18,
                       "error": {
                         "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m1\u001b[39m\nReceived array:  \u001b[31m[{\"product\": {\"categories\": [\"accessories\", \"telescopes\"], \"id\": \"0PUK6V6EV0\", \"name\": \"Solar System Color Imager\", \"priceUsd\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 175}}, \"productId\": \"0PUK6V6EV0\", \"quantity\": 1}]\u001b[39m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m1\u001b[39m\nReceived array:  \u001b[31m[{\"product\": {\"categories\": [\"accessories\", \"telescopes\"], \"id\": \"0PUK6V6EV0\", \"name\": \"Solar System Color Imager\", \"priceUsd\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 175}}, \"productId\": \"0PUK6V6EV0\", \"quantity\": 1}]\u001b[39m\n    at /Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts:62:24",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m1\u001b[39m\nReceived array:  \u001b[31m[{\"product\": {\"categories\": [\"accessories\", \"telescopes\"], \"id\": \"0PUK6V6EV0\", \"name\": \"Solar System Color Imager\", \"priceUsd\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 175}}, \"productId\": \"0PUK6V6EV0\", \"quantity\": 1}]\u001b[39m\n    at /Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts:56:24",
                         "location": {
                           "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
                           "column": 24,
-                          "line": 62
+                          "line": 56
                         },
-                        "snippet": "  60 |     const cartRes = await request.get(`/api/cart?sessionId=${userId}`);\n  61 |     const cart = await cartRes.json();\n> 62 |     expect(cart.items).toHaveLength(0);\n     |                        ^\n  63 |   });\n  64 |\n  65 |   // spec: 422 response documented for this operation, with a `code` field."
+                        "snippet": "  54 |\n  55 |     const cart = await (await request.get(`/api/cart?sessionId=${userId}`)).json();\n> 56 |     expect(cart.items).toHaveLength(0);\n     |                        ^\n  57 |   });\n  58 |\n  59 |   // spec: 422 is documented for this operation, with a `code: PAYMENT_FAILED` enum value."
                       },
                       "errors": [
                         {
                           "location": {
                             "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
                             "column": 24,
-                            "line": 62
+                            "line": 56
                           },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m1\u001b[39m\nReceived array:  \u001b[31m[{\"product\": {\"categories\": [\"accessories\", \"telescopes\"], \"id\": \"0PUK6V6EV0\", \"name\": \"Solar System Color Imager\", \"priceUsd\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 175}}, \"productId\": \"0PUK6V6EV0\", \"quantity\": 1}]\u001b[39m\n\n  60 |     const cartRes = await request.get(`/api/cart?sessionId=${userId}`);\n  61 |     const cart = await cartRes.json();\n> 62 |     expect(cart.items).toHaveLength(0);\n     |                        ^\n  63 |   });\n  64 |\n  65 |   // spec: 422 response documented for this operation, with a `code` field.\n    at /Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts:62:24"
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveLength\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected length: \u001b[32m0\u001b[39m\nReceived length: \u001b[31m1\u001b[39m\nReceived array:  \u001b[31m[{\"product\": {\"categories\": [\"accessories\", \"telescopes\"], \"id\": \"0PUK6V6EV0\", \"name\": \"Solar System Color Imager\", \"priceUsd\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 175}}, \"productId\": \"0PUK6V6EV0\", \"quantity\": 1}]\u001b[39m\n\n  54 |\n  55 |     const cart = await (await request.get(`/api/cart?sessionId=${userId}`)).json();\n> 56 |     expect(cart.items).toHaveLength(0);\n     |                        ^\n  57 |   });\n  58 |\n  59 |   // spec: 422 is documented for this operation, with a `code: PAYMENT_FAILED` enum value.\n    at /Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts:56:24"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.459Z",
+                      "startTime": "2026-09-13T12:57:11.240Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "error-context",
                           "contentType": "text/markdown",
-                          "path": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/test-results/checkout-POST-checkout-aft-9c23e-cart-for-that-user-is-empty/error-context.md"
+                          "path": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/test-results/generated-checkout-POST-ch-841c6-cart-for-that-user-is-empty/error-context.md"
                         }
                       ],
                       "errorLocation": {
                         "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
                         "column": 24,
-                        "line": 62
+                        "line": 56
                       }
                     }
                   ],
                   "status": "unexpected"
                 }
               ],
-              "id": "25ab1bfc84c57e3e3a45-f90e207e2145f7420cf7",
-              "file": "checkout.spec.ts",
-              "line": 52,
+              "id": "ad2cb6f597d64bc543c4-4aebd447334b86742b58",
+              "file": "generated/checkout.spec.ts",
+              "line": 47,
               "column": 7
             },
             {
-              "title": "a declined payment returns the documented 422 with a code field — requires flagd, not testable against the mock",
+              "title": "a declined payment returns the documented 422 with code=PAYMENT_FAILED — requires flagd, not testable against the mock",
               "ok": true,
               "tags": [],
               "tests": [
@@ -390,7 +552,7 @@
                       "type": "skip",
                       "location": {
                         "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
-                        "line": 72,
+                        "line": 66,
                         "column": 8
                       }
                     }
@@ -400,21 +562,21 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
+                      "workerIndex": 3,
+                      "parallelIndex": 1,
                       "status": "skipped",
                       "duration": 0,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.495Z",
+                      "startTime": "2026-09-13T12:57:11.637Z",
                       "annotations": [
                         {
                           "type": "skip",
                           "location": {
                             "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
-                            "line": 72,
+                            "line": 66,
                             "column": 8
                           }
                         }
@@ -425,140 +587,258 @@
                   "status": "skipped"
                 }
               ],
-              "id": "25ab1bfc84c57e3e3a45-1573d58b9ade4df8b673",
-              "file": "checkout.spec.ts",
-              "line": 72,
+              "id": "ad2cb6f597d64bc543c4-c56004b862b95baca404",
+              "file": "generated/checkout.spec.ts",
+              "line": 66,
               "column": 8
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "products.spec.ts",
-      "file": "products.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "GET /products",
-          "file": "products.spec.ts",
-          "line": 8,
-          "column": 6,
-          "specs": [
+            },
             {
-              "title": "returns an array of products, each with the required fields",
+              "title": "an unhandled downstream failure returns the documented 500 — no spec-derivable trigger, and no fault-injection path in the mock",
               "ok": true,
               "tags": [],
               "tests": [
                 {
                   "timeout": 15000,
-                  "annotations": [],
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
+                        "line": 77,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.638Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "location": {
+                            "file": "/Users/himanshu.g/Downloads/gitWorkSpace/qa-em-assignment/agentic/generated/checkout.spec.ts",
+                            "line": 77,
+                            "column": 8
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ad2cb6f597d64bc543c4-fe488271693d86e59c68",
+              "file": "generated/checkout.spec.ts",
+              "line": 77,
+              "column": 8
+            },
+            {
+              "title": "creditCardExpirationMonth=13 (outside the spec's [1,12] bounds) is rejected, or flagged if silently accepted",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [
+                    {
+                      "type": "quality-risk",
+                      "description": "POST /checkout accepted creditCardExpirationMonth=13 with a 200, despite the spec declaring minimum: 1, maximum: 12 — no validation rejects an out-of-bounds month."
+                    }
+                  ],
                   "expectedStatus": "passed",
                   "projectId": "",
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 3,
+                      "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 45,
+                      "duration": 60,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.390Z",
-                      "annotations": [],
+                      "startTime": "2026-09-13T12:57:11.638Z",
+                      "annotations": [
+                        {
+                          "type": "quality-risk",
+                          "description": "POST /checkout accepted creditCardExpirationMonth=13 with a 200, despite the spec declaring minimum: 1, maximum: 12 — no validation rejects an out-of-bounds month."
+                        }
+                      ],
                       "attachments": []
                     }
                   ],
                   "status": "expected"
                 }
               ],
-              "id": "000c94276132c4f97581-77b1a1c30fcd64c9cbd4",
-              "file": "products.spec.ts",
-              "line": 10,
+              "id": "ad2cb6f597d64bc543c4-0918624443c3486a58ce",
+              "file": "generated/checkout.spec.ts",
+              "line": 85,
+              "column": 9
+            },
+            {
+              "title": "creditCardExpirationMonth=0 (outside the spec's [1,12] bounds) is rejected, or flagged if silently accepted",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [
+                    {
+                      "type": "quality-risk",
+                      "description": "POST /checkout accepted creditCardExpirationMonth=0 with a 200, despite the spec declaring minimum: 1, maximum: 12 — no validation rejects an out-of-bounds month."
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 7,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.727Z",
+                      "annotations": [
+                        {
+                          "type": "quality-risk",
+                          "description": "POST /checkout accepted creditCardExpirationMonth=0 with a 200, despite the spec declaring minimum: 1, maximum: 12 — no validation rejects an out-of-bounds month."
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ad2cb6f597d64bc543c4-ccdfb67356bedb52079f",
+              "file": "generated/checkout.spec.ts",
+              "line": 85,
+              "column": 9
+            },
+            {
+              "title": "an invalid email format is rejected, or flagged if silently accepted",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [
+                    {
+                      "type": "quality-risk",
+                      "description": "POST /checkout accepted email=\"not-an-email\" with a 200, despite the spec declaring format: email — no format validation rejects a malformed address."
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 18,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.743Z",
+                      "annotations": [
+                        {
+                          "type": "quality-risk",
+                          "description": "POST /checkout accepted email=\"not-an-email\" with a 200, despite the spec declaring format: email — no format validation rejects a malformed address."
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ad2cb6f597d64bc543c4-5ecc5feda66c111899e7",
+              "file": "generated/checkout.spec.ts",
+              "line": 116,
               "column": 7
             },
             {
-              "title": "currencyCode query param is reflected in each product priceUsd.currencyCode",
+              "title": "omitting the required email field is rejected, or flagged if silently accepted",
               "ok": true,
               "tags": [],
               "tests": [
                 {
                   "timeout": 15000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
+                  "annotations": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
-                      "status": "passed",
-                      "duration": 14,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.459Z",
-                      "annotations": [],
-                      "attachments": []
+                      "type": "quality-risk",
+                      "description": "POST /checkout accepted a request missing `email` (required in PlaceOrderRequest) with a 200 instead of a validation error."
                     }
                   ],
-                  "status": "expected"
-                }
-              ],
-              "id": "000c94276132c4f97581-8d59eb824b8bfdac19e7",
-              "file": "products.spec.ts",
-              "line": 30,
-              "column": 7
-            }
-          ]
-        },
-        {
-          "title": "GET /products/{productId}",
-          "file": "products.spec.ts",
-          "line": 39,
-          "column": 6,
-          "specs": [
-            {
-              "title": "a valid productId returns 200 with the full Product shape",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 15000,
-                  "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "",
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
+                      "workerIndex": 3,
+                      "parallelIndex": 1,
                       "status": "passed",
                       "duration": 4,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.484Z",
-                      "annotations": [],
+                      "startTime": "2026-09-13T12:57:11.766Z",
+                      "annotations": [
+                        {
+                          "type": "quality-risk",
+                          "description": "POST /checkout accepted a request missing `email` (required in PlaceOrderRequest) with a 200 instead of a validation error."
+                        }
+                      ],
                       "attachments": []
                     }
                   ],
                   "status": "expected"
                 }
               ],
-              "id": "000c94276132c4f97581-aef6cd971ebee6de8450",
-              "file": "products.spec.ts",
-              "line": 41,
+              "id": "ad2cb6f597d64bc543c4-f36a276bd21872418de8",
+              "file": "generated/checkout.spec.ts",
+              "line": 138,
               "column": 7
-            },
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "generated/products.spec.ts",
+      "file": "generated/products.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "GET /products (listProducts)",
+          "file": "generated/products.spec.ts",
+          "line": 20,
+          "column": 6,
+          "specs": [
             {
-              "title": "a nonexistent productId returns the documented 404",
+              "title": "returns an array of products, each satisfying the required Product/Money fields",
               "ok": true,
               "tags": [],
               "tests": [
@@ -573,12 +853,12 @@
                       "workerIndex": 2,
                       "parallelIndex": 2,
                       "status": "passed",
-                      "duration": 3,
+                      "duration": 76,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.493Z",
+                      "startTime": "2026-09-13T12:57:11.125Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -586,13 +866,89 @@
                   "status": "expected"
                 }
               ],
-              "id": "000c94276132c4f97581-7ecd3770f05c1cb25581",
-              "file": "products.spec.ts",
-              "line": 52,
+              "id": "65c20626ccbd1f2be193-79b3b3e5cd7f77657a98",
+              "file": "generated/products.spec.ts",
+              "line": 23,
               "column": 7
             },
             {
-              "title": "priceUsd.nanos stays within the spec-declared bounds regardless of currency",
+              "title": "currencyCode query param is reflected in every product priceUsd.currencyCode",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 8,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.236Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "65c20626ccbd1f2be193-3d9cb3f62e1a841150c4",
+              "file": "generated/products.spec.ts",
+              "line": 44,
+              "column": 7
+            },
+            {
+              "title": "priceUsd.currencyCode is always exactly 3 characters, per the spec-declared bounds",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 17,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.261Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "65c20626ccbd1f2be193-540a468b268df6c0eefa",
+              "file": "generated/products.spec.ts",
+              "line": 55,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "GET /products/{productId} (getProduct)",
+          "file": "generated/products.spec.ts",
+          "line": 71,
+          "column": 6,
+          "specs": [
+            {
+              "title": "a valid productId returns 200 with the full Product shape",
               "ok": true,
               "tags": [],
               "tests": [
@@ -612,7 +968,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-07T16:24:29.504Z",
+                      "startTime": "2026-09-13T12:57:11.314Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -620,9 +976,121 @@
                   "status": "expected"
                 }
               ],
-              "id": "000c94276132c4f97581-645d02829f85212651f6",
-              "file": "products.spec.ts",
-              "line": 60,
+              "id": "65c20626ccbd1f2be193-f73f9c025b48581cf8cc",
+              "file": "generated/products.spec.ts",
+              "line": 73,
+              "column": 7
+            },
+            {
+              "title": "a nonexistent productId returns the documented 404",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 5,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.342Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "65c20626ccbd1f2be193-329390a3aa5548e6dadf",
+              "file": "generated/products.spec.ts",
+              "line": 93,
+              "column": 7
+            },
+            {
+              "title": "priceUsd.nanos stays within the spec-declared bounds regardless of currency",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 10,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.356Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "65c20626ccbd1f2be193-944cab795f6478b1b959",
+              "file": "generated/products.spec.ts",
+              "line": 100,
+              "column": 7
+            },
+            {
+              "title": "JPY conversion is observed for a zero-decimal-currency rounding risk (flag only, not a hard assertion)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 15000,
+                  "annotations": [
+                    {
+                      "type": "quality-risk",
+                      "description": "GET /products/{productId}?currencyCode=JPY returned a non-zero nanos (500000000). JPY is a zero-decimal currency in practice, so this is worth a look, but the spec doesn't declare which currencies are zero-decimal, so this isn't asserted as a hard failure. See test-cases/03-product-catalog-currency.md TC-PC-01 for the same risk called out from the human side."
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T12:57:11.379Z",
+                      "annotations": [
+                        {
+                          "type": "quality-risk",
+                          "description": "GET /products/{productId}?currencyCode=JPY returned a non-zero nanos (500000000). JPY is a zero-decimal currency in practice, so this is worth a look, but the spec doesn't declare which currencies are zero-decimal, so this isn't asserted as a hard failure. See test-cases/03-product-catalog-currency.md TC-PC-01 for the same risk called out from the human side."
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "65c20626ccbd1f2be193-ec7102bcb498bcf1d565",
+              "file": "generated/products.spec.ts",
+              "line": 117,
               "column": 7
             }
           ]
@@ -632,11 +1100,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-09-07T16:24:29.115Z",
-    "duration": 421.54800000000006,
-    "expected": 11,
-    "skipped": 1,
-    "unexpected": 1,
+    "startTime": "2026-09-13T12:57:10.713Z",
+    "duration": 1069.349,
+    "expected": 19,
+    "skipped": 2,
+    "unexpected": 2,
     "flaky": 0
   }
 }

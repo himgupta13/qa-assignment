@@ -10,7 +10,17 @@ const path = require('path');
 const yaml = require('js-yaml');
 
 const SPEC_PATH = path.resolve(__dirname, '../openapi/frontend-api.yaml');
-const GENERATED_DIR = path.resolve(__dirname, '../generated');
+const AGENTIC_DIR = path.resolve(__dirname, '..');
+
+// Dynamically discover every generated-suite directory (agentic/generated/,
+// agentic/generated-test/, or any future agentic/generated-*/) instead of hardcoding one
+// directory name, so conformance checking follows wherever a suite actually got written.
+function findGeneratedDirs() {
+  return fs
+    .readdirSync(AGENTIC_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && /^generated/.test(entry.name))
+    .map((entry) => path.join(AGENTIC_DIR, entry.name));
+}
 
 function loadSpecPaths() {
   const spec = yaml.load(fs.readFileSync(SPEC_PATH, 'utf-8'));
@@ -45,28 +55,34 @@ function normalizeUrl(url) {
 
 function main() {
   const specPaths = loadSpecPaths();
-  if (!fs.existsSync(GENERATED_DIR)) {
-    console.error(`No generated/ directory found at ${GENERATED_DIR}`);
+  const generatedDirs = findGeneratedDirs();
+  if (generatedDirs.length === 0) {
+    console.error(`No generated* directory found under ${AGENTIC_DIR}`);
     process.exit(1);
   }
 
-  const files = fs.readdirSync(GENERATED_DIR).filter((f) => f.endsWith('.spec.ts'));
-  if (files.length === 0) {
-    console.error('No generated *.spec.ts files found — nothing to check.');
-    process.exit(1);
-  }
-
+  let fileCount = 0;
   let violations = [];
-  for (const file of files) {
-    const content = fs.readFileSync(path.join(GENERATED_DIR, file), 'utf-8');
-    const calls = extractCalls(content);
-    for (const call of calls) {
-      const normalized = normalizeUrl(call.url);
-      const matches = specPaths.some((p) => p.method === call.method && p.regex.test(normalized));
-      if (!matches) {
-        violations.push(`${file}: ${call.method} ${call.url} does not match any operation in frontend-api.yaml`);
+  for (const dir of generatedDirs) {
+    const files = fs.readdirSync(dir).filter((f) => f.endsWith('.spec.ts'));
+    for (const file of files) {
+      fileCount += 1;
+      const relPath = path.join(path.basename(dir), file);
+      const content = fs.readFileSync(path.join(dir, file), 'utf-8');
+      const calls = extractCalls(content);
+      for (const call of calls) {
+        const normalized = normalizeUrl(call.url);
+        const matches = specPaths.some((p) => p.method === call.method && p.regex.test(normalized));
+        if (!matches) {
+          violations.push(`${relPath}: ${call.method} ${call.url} does not match any operation in frontend-api.yaml`);
+        }
       }
     }
+  }
+
+  if (fileCount === 0) {
+    console.error('No generated *.spec.ts files found — nothing to check.');
+    process.exit(1);
   }
 
   if (violations.length > 0) {
@@ -75,7 +91,11 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`CONFORMANCE OK — checked ${files.length} generated file(s), all calls trace to a spec'd operation.`);
+  console.log(
+    `CONFORMANCE OK — checked ${fileCount} generated file(s) across ${generatedDirs.length} ` +
+      `director${generatedDirs.length === 1 ? 'y' : 'ies'} (${generatedDirs.map((d) => path.basename(d)).join(', ')}), ` +
+      `all calls trace to a spec'd operation.`
+  );
 }
 
 main();
