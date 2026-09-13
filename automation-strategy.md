@@ -10,7 +10,7 @@
 
 ## Structuring this for a team of 4, not just this assignment
 
-- **Own by flow, not by file.** Matches the pod structure in `test-strategy.md` §3: the Checkout/Payments pod owns `tests/api/checkout.spec.ts` and reviews any PR touching it; Cart/Catalog owns the other two spec files. `fixtures/` (flagd control, test data, gRPC client) is shared infrastructure — changes there need sign-off from whoever's on automation-platform duty that quarter, because a broken fixture breaks every pod's tests at once.
+- **Own by flow, not by file.** Matches the pod structure in `test-strategy.md` §3: the Checkout/Payments pod owns `tests/api/checkout.spec.ts` and reviews any PR touching it; Cart/Catalog owns the other two spec files. `fixtures/` (flagd control, test data) is shared infrastructure — changes there need sign-off from whoever's on automation-platform duty that quarter, because a broken fixture breaks every pod's tests at once.
 - **Test data lives in `fixtures/testData.ts`, not hardcoded per test.** Real product IDs sourced from the demo's own seed data (`postgresql/init.sql`), not invented — so tests fail because of real behavior changes, not because someone typo'd a product ID that happened to work by accident. As the team adds tests, new fixtures get added here, not copy-pasted into new spec files.
 - **flagd control is centralized in `fixtures/flagd.ts`.** Every fault-injection test goes through the same read-modify-write helper against the frontend's `/feature/api/{read,write}` proxy (confirmed by reading the demo's own Cypress test, not guessed). One place to fix if flagd's control mechanism ever changes.
 
@@ -32,12 +32,6 @@ PR opened/updated                                                    [ephemeral 
 
 merge to main / nightly schedule                                     [see "Execution model" below]
    └─▶ everything the PR gate runs, PLUS:
-        tests/api/product-catalog.grpc.spec.ts — TC-PC-03, with PRODUCT_CATALOG_GRPC_ADDR
-                                                   resolved by the nightly job itself
-                                                   (`docker compose port product-catalog 3550`)
-                                                   — not attempted on the PR gate because
-                                                   resolving and exporting that port is one
-                                                   more moving part per-PR for a single test
         the probabilistic cartFailure sweep (10/25/50/75/90%) and full ~30-currency
           combinatorics — NOT implemented yet (see test-strategy.md §2 and automation/README.md
           "Not automated"); nightly is where they'd land if the team ever builds them, because
@@ -79,7 +73,7 @@ in reverse.
   bug structurally impossible instead of relying on discipline to avoid it.
   - The one place I'd reconsider this: a **nightly** run is a single scheduled job, not N concurrent PR jobs,
     so the cross-job contamination risk mostly disappears. If the ~2-4 minute boot cost ever becomes a real
-    bottleneck for the nightly's larger scope (gRPC + a future percentage sweep + full currency matrix), a
+    bottleneck for the nightly's larger scope (a future percentage sweep + full currency matrix), a
     persistent staging VM reused only by the nightly job (never by PR jobs) would be a reasonable trade-off to
     revisit then — not something I'd build ahead of an actual bottleneck.
 

@@ -73,9 +73,9 @@ test.describe('Product catalog — nonexistent product (CONFIRMED BUG)', () => {
   // automated here: SearchProducts exists in the proto (ProductCatalogService) but the
   // frontend's REST BFF never exposes a /api/products search/query parameter — we
   // verified this by reading src/frontend/pages/api/products/*, there's no query
-  // pass-through. Testing it at all means going around the BFF to gRPC directly; see
-  // product-catalog.grpc.spec.ts for the one gRPC-level test we added instead of
-  // faking REST coverage that doesn't exist. See automation/README.md "Not automated".
+  // pass-through. Testing it at all means going around the BFF to gRPC directly, which
+  // this suite deliberately does not do (see automation/README.md "Not automated" for
+  // the tradeoff) — so TC-PC-03 has no automated coverage at any layer here.
   //
   // REAL FINDING from the live app: this test originally asserted a 4xx and failed
   // against the real docker-compose stack with a 500. Traced the root cause across two

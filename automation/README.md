@@ -22,6 +22,22 @@ npm run report        # open the last HTML report
 
 Override the target with `BASE_URL=http://localhost:8080 npm test` if the frontend isn't on the default port.
 
+## Reports
+
+Every run writes three things locally, per `playwright.config.ts`'s reporter config:
+- `playwright-report/` — the HTML report (`npm run report` opens the most recent one; screenshots,
+  traces, and video are attached here for anything that failed, per `trace: 'retain-on-failure'` /
+  `video: 'retain-on-failure'`)
+- `test-results/results.json` — the same run in machine-readable form, keyed by test name (the `TC-XX-NN`
+  prefixes exist so this maps back to `test-cases/*.md` mechanically)
+- `test-results/` — raw per-test artifacts (traces, screenshots) the HTML report links into
+
+Locally, that's the whole story — open `playwright-report/index.html` and read it. In CI, this same output
+is what gets published outward: the HTML report as a build artifact linked from the failing check, a PR
+comment summarizing pass/fail by test-case ID parsed from `results.json`, and a rolled-up pass-rate digest
+for non-QA stakeholders. See `../automation-strategy.md`'s "Reporting: what gets published, and to whom"
+for the full breakdown of which artifact goes to which audience and why.
+
 ## What's automated
 
 **Checkout**
@@ -43,8 +59,11 @@ Override the target with `BASE_URL=http://localhost:8080 npm test` if the fronte
 **Product catalog**
 - Currency consistency across conversions, including JPY (TC-PC-01)
 - Targeted product-catalog failure (TC-PC-02)
-- Search edge cases, via direct gRPC (TC-PC-03)
 - Nonexistent product ID
+
+Not automated: TC-PC-03 (search edge cases). `SearchProducts` exists on the service but the frontend's REST
+BFF never exposes a search/query route — the only way to exercise it is a direct gRPC client, which this
+suite deliberately doesn't carry just for one test case. Manual/exploratory only.
 
 **UI**
 - Golden path: browse → add to cart → checkout
