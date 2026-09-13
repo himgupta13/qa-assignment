@@ -4,9 +4,8 @@
 
 - **One framework, two layers.** Playwright runs API tests (via `request` fixture) and browser E2E tests from the same project, config, reporter, and CI job. For a team of 4 covering 20 services, minimizing the number of distinct tools they need to context-switch between matters more than picking the theoretically best tool for each layer individually.
 
-- **Matches the stack.** The frontend is Next.js/TypeScript; the frontend BFF (`/api/*`) is what most of our tests hit. Writing tests in the same language as the system under test means any QA engineer can read the frontend source directly when a test fails, without a translation step.
+- **Matches the stack.** The frontend is Next.js/TypeScript; the frontend BFF (`/api/*`) is what most of our tests hit. Writing tests in the same language as the system under test means any QA engineer can read the frontend source directly when a test fails, without a translation step and vice-versa.
 
-- **The demo repo already ships a Cypress suite** (`opentelemetry-demo/src/frontend/cypress/e2e/`, 4 files, ~250 lines, golden-path UI coverage). I did not duplicate it. Our suite is deliberately complementary:API-level negative and fault-injection paths (`cartFailure`, `paymentFailure`, `productCatalogFailure`) that the existing suite doesn't cover, plus one Playwright E2E test so the whole thing runs from a single command. A real team inheriting both suites would either consolidate onto one tool over time or explicitly own the boundary (Cypress = UI regression, Playwright = API/contract) — I'd bring this exact tradeoff to the team rather than silently picking one.
 
 ## Structuring this for a team of 4, not just this assignment
 
@@ -17,27 +16,19 @@
 ## CI: where tests run, on what triggers
 
 ```
-PR opened/updated                                                    [ephemeral CI runner, fresh per PR]
+API Test Case execution on each Dev PR opened/updated                                                    
    │
    ├─▶ npm run test:api   (docker compose up in CI runner; ~2-4 min; blocks merge)
-   │      tests/api/checkout.spec.ts        — TC-CO-01..06 (all deterministic: both happy
-   │                                           paths, payment decline, idempotency race,
-   │                                           cart-failure-after-charge bug pin, empty-cart bug pin)
-   │      tests/api/cart.spec.ts            — TC-CT-01..04, 07, 08 (all deterministic;
-   │                                           cartFailure only at its 100% variant)
-   │      tests/api/product-catalog.spec.ts — TC-PC-01, TC-PC-02, nonexistent-product bug pin
+   │      tests/api/checkout.spec.ts    
+   │      tests/api/cart.spec.ts           
+   │      tests/api/product-catalog.spec.ts 
    │
    └─▶ npm run test:e2e   (golden path only; ~1-2 min; blocks merge)
-          tests/e2e/golden-path.spec.ts     — browse → cart → checkout, one test
+          tests/e2e/golden-path.spec.ts     — browse → cart → checkout, one test (Ensure TC is not flaky)
 
-merge to main / nightly schedule                                     [see "Execution model" below]
-   └─▶ everything the PR gate runs, PLUS:
-        the probabilistic cartFailure sweep (10/25/50/75/90%) and full ~30-currency
-          combinatorics — NOT implemented yet (see test-strategy.md §2 and automation/README.md
-          "Not automated"); nightly is where they'd land if the team ever builds them, because
-          a statistically-sized sample is inherently slower and noisier than the PR gate should be
-        any NEW E2E test beyond the golden path, until it's proven stable for ~2 weeks (see below)
-        re-run of anything on the flake quarantine list, for trend tracking only — not blocking
+Nightly schedule on main dev branch on QA Environment                                    
+   └─▶ All Regression Scenarios (UI+API including contract tests) Report should be published before Team checks in so that they can triage failed cases (if any). Create (Add Auto bug creation tool) bug for failures due to product bug, report any infra stability or fix flaky test script.
+   └─▶ Performance run of critical APIs/Flows & comparison with previous run numbers to ensure KPIs are not degrading once new code is merged.
 ```
 
 **Why this split:** API tests block every PR because they're fast (~seconds each, no browser) and
