@@ -49,7 +49,15 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Product' }
         "404":
-          description: Product not found
+          description: >
+            Product not found. This is the INTENDED contract (it's what
+            product-catalog's GetProduct actually signals via gRPC codes.NotFound —
+            see main.go). Verified live against docker-compose that the frontend BFF
+            currently returns a bare 500 instead, because the route has no error
+            handling around the gRPC call. See automation/tests/api/product-catalog.spec.ts
+            and agentic/AGENT-DESIGN.md for how the agent-generated suite (which tests
+            against this spec's 404, i.e. the correct contract) exposes exactly this gap
+            when eventually pointed at the real app instead of the mock.
   /cart:
     get:
       operationId: getCart

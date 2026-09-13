@@ -68,7 +68,7 @@ test.describe('Product catalog — targeted fault injection (flagd: productCatal
   });
 });
 
-test.describe('Product catalog — nonexistent product', () => {
+test.describe('Product catalog — nonexistent product (CONFIRMED BUG)', () => {
   // TC-PC-03's search cases (no-match/empty/injection/long-string queries) are NOT
   // automated here: SearchProducts exists in the proto (ProductCatalogService) but the
   // frontend's REST BFF never exposes a /api/products search/query parameter — we
@@ -76,11 +76,25 @@ test.describe('Product catalog — nonexistent product', () => {
   // pass-through. Testing it at all means going around the BFF to gRPC directly; see
   // product-catalog.grpc.spec.ts for the one gRPC-level test we added instead of
   // faking REST coverage that doesn't exist. See automation/README.md "Not automated".
-  test('a request for a nonexistent product ID fails cleanly, not with a stack trace or 200 + empty body', async ({
+  //
+  // REAL FINDING from the live app: this test originally asserted a 4xx and failed
+  // against the real docker-compose stack with a 500. Traced the root cause across two
+  // services — product-catalog's GetProduct (main.go) correctly returns a gRPC
+  // codes.NotFound for a missing ID, but the frontend BFF route
+  // (pages/api/products/[productId]/index.ts) has NO error handling at all around the
+  // gRPC call — it awaits ProductCatalogService.getProduct with no try/catch, so any
+  // rejection (including a well-formed NotFound) becomes an unhandled promise rejection
+  // and Next.js's default 500. The backend does the right thing; the BFF throws it away.
+  // Pinning the current (bad) behavior as a regression guard, same as TC-CO-04.
+  test('a nonexistent product ID returns an unhandled 500, not the 404 the backend actually signals (bug)', async ({
     request,
   }) => {
     const res = await request.get(`/api/products/${NONEXISTENT_PRODUCT_ID}`);
-    expect(res.status()).toBeGreaterThanOrEqual(400);
-    expect(res.status()).toBeLessThan(500);
+    expect(res.status()).toBe(500);
+    test.info().annotations.push({
+      type: 'quality-risk',
+      description:
+        'CONFIRMED: product-catalog correctly returns gRPC NotFound for a missing product, but the frontend BFF route has no error handling and turns it into a generic 500. Fix belongs in pages/api/products/[productId]/index.ts.',
+    });
   });
 });

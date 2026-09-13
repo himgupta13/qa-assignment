@@ -55,14 +55,35 @@ test.describe('Cart — empty and read', () => {
 test.describe('Cart — partial failure (flagd: cartFailure)', () => {
   test.afterEach(async ({ request }) => resetFlag(request, 'cartFailure'));
 
-  test('TC-CT-03: under 100% cartFailure, calls fail cleanly rather than returning corrupted partial data', async ({
+  // REAL FINDING from running this against the live docker-compose stack (see
+  // src/cart/src/services/CartService.cs in the demo repo): cartFailure is checked ONLY
+  // inside EmptyCart, not AddItem or GetCart — so a "cart service failure" fault
+  // injection does NOT make cart reads fail at all. The original version of this test
+  // asserted a GET would fail under cartFailure=100% and it did not (verified live:
+  // GET/POST both returned 200 with the flag on). Corrected to target DELETE, the
+  // operation that actually reads the flag. See test-cases/02-cart-flow.md TC-CT-03 for
+  // the quality-risk writeup of *how* it fails once triggered.
+  test('TC-CT-03 (corrected): cartFailure only affects EmptyCart, not GetCart/AddItem', async ({ request }) => {
+    await setFlag(request, 'cartFailure', '100%');
+    const userId = uniqueUserId('tc-ct-03-read');
+    await request.post('/api/cart', { data: { userId, item: { productId: '0PUK6V6EV0', quantity: 1 } } });
+
+    const getRes = await request.get(`/api/cart?sessionId=${userId}`);
+    expect(getRes.status()).toBe(200); // documents the real (surprising) behavior, not a guess
+  });
+
+  test('TC-CT-03: under 100% cartFailure, EmptyCart fails with a clean 5xx (not a silent success)', async ({
     request,
   }) => {
     await setFlag(request, 'cartFailure', '100%');
-    const userId = uniqueUserId('tc-ct-03');
+    const userId = uniqueUserId('tc-ct-03-delete');
+    await request.post('/api/cart', { data: { userId, item: { productId: '0PUK6V6EV0', quantity: 1 } } });
 
-    const res = await request.get(`/api/cart?sessionId=${userId}`);
-    // A failing call must be a clean error status, never a 200 with malformed/partial JSON.
+    const res = await request.delete('/api/cart', { data: { userId } });
+    // cartFailure routes EmptyCart to a hardcoded unreachable store ("badhost:1234" in
+    // Program.cs) instead of returning a documented error — it fails, but as an
+    // unhandled infra-level exception, not an intentional application error. Confirmed
+    // live: 500 after ~2s (the connection attempt failing), not a graceful decline.
     expect(res.status()).toBeGreaterThanOrEqual(500);
   });
 });

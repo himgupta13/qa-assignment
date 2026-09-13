@@ -9,6 +9,18 @@ import { APIRequestContext } from '@playwright/test';
 const READ_URL = '/feature/api/read';
 const WRITE_URL = '/feature/api/write';
 
+/**
+ * REAL FINDING from running this live: without a wait here, the very next request after
+ * a flag write raced flagd's file-watch + propagate-to-service cycle and observed the OLD
+ * value (confirmed: an isolated test toggling paymentFailure to 100% then immediately
+ * checking out got a 200, not the expected 422, ~357ms end to end). curl commands typed
+ * out by hand happened to have enough incidental delay between them to never hit this;
+ * a fast automated client does not. 1s is an empirical margin, not a documented flagd
+ * guarantee — see automation-strategy.md "Flakiness" for why this is itself the kind of
+ * shared-external-state risk that suite design has to account for, not paper over.
+ */
+const FLAGD_PROPAGATION_DELAY_MS = 1000;
+
 export async function setFlag(request: APIRequestContext, flagName: string, defaultVariant: string) {
   const read = await request.get(READ_URL);
   const body = await read.json();
@@ -17,6 +29,7 @@ export async function setFlag(request: APIRequestContext, flagName: string, defa
   }
   body.flags[flagName].defaultVariant = defaultVariant;
   await request.post(WRITE_URL, { data: { data: body } });
+  await new Promise((r) => setTimeout(r, FLAGD_PROPAGATION_DELAY_MS));
 }
 
 /**
@@ -29,6 +42,7 @@ export async function setProductCatalogFailure(request: APIRequestContext, varia
   const body = await read.json();
   body.flags.productCatalogFailure.targeting.if[1] = variant;
   await request.post(WRITE_URL, { data: { data: body } });
+  await new Promise((r) => setTimeout(r, FLAGD_PROPAGATION_DELAY_MS));
 }
 
 export async function resetFlag(request: APIRequestContext, flagName: string) {

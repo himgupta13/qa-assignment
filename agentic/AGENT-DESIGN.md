@@ -96,6 +96,29 @@ bugs caught by 1 of 13 tests.** That's the honest number, and it's the strongest
 why "generate tests from a spec" still needs a human in the loop — a spec that's silent on a behavior
 produces an agent that's silent on it too.
 
+## Update: run against the real app (not the mock) caught a real bug
+
+Docker finished installing partway through this assignment, so once `docker compose up` was live I re-ran
+the exact same generated suite with `BASE_URL=http://localhost:8080` instead of the mock. 11 of 13 passed
+— and the one real failure is the single most convincing result in this repo:
+
+```
+GET /products/{productId} › a nonexistent productId returns the documented 404
+Expected: 404
+Received: 500
+```
+
+I traced this independently by reading source, not from the test failure — `product-catalog`'s `GetProduct`
+(`main.go`) correctly returns gRPC `codes.NotFound` for a missing ID, but the frontend BFF route
+(`pages/api/products/[productId]/index.ts`) has no error handling around that call at all, so the rejection
+becomes an unhandled exception and Next.js's default 500. **The agent-generated test caught this on its own,
+against the real app, with no human pointing it at this specific case** — it's exactly the kind of contract
+violation this whole pipeline exists to catch: the spec (written from reading the intended backend contract)
+says 404, the real system says 500, and the generated suite is the thing that noticed. This is now also
+pinned as a regression test in `automation/tests/api/product-catalog.spec.ts` (asserting the *current*, buggy
+500, with a comment pointing at the real fix location) — see that file and `test-strategy.md` for how a
+manual/automated pair handles a confirmed bug versus an open question.
+
 ## What the agent decides vs. what stays with a human
 
 **The agent decides:**

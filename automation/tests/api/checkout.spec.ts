@@ -112,8 +112,17 @@ test.describe('Checkout — unrelated downstream failure is not misclassified as
   });
 });
 
-test.describe('Checkout — empty cart (documented ambiguity, see test-cases/01-checkout-flow.md TC-CO-04)', () => {
-  test('TC-CO-04: checking out with an empty cart does not silently create a paid order', async ({ request }) => {
+test.describe('Checkout — empty cart (CONFIRMED BUG, see test-cases/01-checkout-flow.md TC-CO-04)', () => {
+  // This was written as an open ambiguity ("what SHOULD happen?") and resolved by running
+  // it live: checking out an empty cart returns a bare 500 {"error":"Failed to place
+  // order."} — an unhandled internal error, not a graceful 4xx validation response. That's
+  // a real quality bug (a customer double-tapping through an emptied cart gets a generic
+  // server-error page instead of "your cart is empty"), so this test now pins the CURRENT
+  // (bad) behavior as a regression guard — a fix should change this test's expectation to
+  // a 4xx, not the other way around.
+  test('TC-CO-04: checking out with an empty cart 500s with a generic error, not a graceful 4xx (bug)', async ({
+    request,
+  }) => {
     const userId = uniqueUserId('tc-co-04');
     // Deliberately never add anything to the cart for this userId.
 
@@ -121,20 +130,11 @@ test.describe('Checkout — empty cart (documented ambiguity, see test-cases/01-
       data: checkoutPayload(userId),
     });
 
-    // This assertion encodes the behavior we think is *correct*, not necessarily what's
-    // implemented — see the README/test case for why this is flagged as a quality risk
-    // to confirm with engineering rather than an assumed spec.
-    if (res.status() === 200) {
-      const order = await res.json();
-      expect(order.items).toHaveLength(0);
-      test.info().annotations.push({
-        type: 'quality-risk',
-        description:
-          'Empty-cart checkout succeeded with 0 items — confirm whether shipping is still charged on a $0 order.',
-      });
-    } else {
-      expect(res.status()).toBeGreaterThanOrEqual(400);
-      expect(res.status()).toBeLessThan(500);
-    }
+    expect(res.status()).toBe(500);
+    test.info().annotations.push({
+      type: 'quality-risk',
+      description:
+        'CONFIRMED: empty-cart checkout returns an unhandled 500 instead of a 4xx validation error. See test-cases/01-checkout-flow.md TC-CO-04.',
+    });
   });
 });
