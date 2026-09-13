@@ -8,11 +8,16 @@ service (`flagd`) that can inject faults into most of the stack on demand.
 
 Risk is not spread evenly across 20 services. It sits at the seams, and it sits where money moves.
 
-| Flow | Why it is high risk | Services |
-|---|---|---|
-| **Checkout / Place order** | The only flow that charges a card. One synchronous request fans out to cart, currency, shipping, payment, email, and a Kafka event. The order of those calls matters: the card is charged *before* shipping is quoted and before the cart is emptied, and the cart-empty error is discarded (`src/checkout/main.go`). A failure after the charge leaves a paid customer with a full cart or no order. Confirmed live: `cartFailure` at 100% gives a 200, a charge, and a cart that is still populated (TC-CO-05). Two concurrent checkouts for the same cart both succeed with different order IDs (TC-CO-04). | frontend → checkout → cart, currency, shipping, payment, email, Kafka |
-| **Cart** | State lives in Valkey, keyed by a browser-generated `userId`. Quantity changes are sent as signed deltas to the same `AddItem` call used for adding, and there is no lower bound: a delta past zero persists a negative quantity (TC-CT-08). Every read re-fetches price from the catalog, so a bad `productId` in the cart breaks every later read, not just the write. | frontend → cart → product-catalog |
-| **Catalog and currency** | Every page converts prices independently. A rounding difference shows as two different numbers for the same item on two pages. A missing product returns a 500 from the BFF instead of the 404 the backend signals, because the route has no error handling (TC-PC-02, confirmed). JPY is zero-decimal and is the obvious rounding trap. | frontend → product-catalog, currency |
+- **Checkout / Place order** — the only flow that charges a card, fanning one request out to cart,
+  currency, shipping, payment, email, and a Kafka event. *Business impact if it fails:* a paid customer
+  with no order, an order with no charge, or two charges for one order — each a chargeback, a refund, and
+  a support ticket. 
+- **Cart** — Valkey-backed state that checkout reads first, carrying price and quantity through from
+  add-to-cart to purchase. *Business impact if it fails:* the customer is billed for something other than
+  what the cart showed, or a quantity update silently goes negative and flows into checkout unclamped.
+- **Catalog and currency** — every page converts and displays price independently. *Business impact if it
+  fails:* the same customer sees two different prices for one item in two places, or a product 500s
+  instead of 404ing and looks broken rather than sold out (TC-PC-02, confirmed).
 
 What I deliberately do not test deeply: `ad`, `recommendation`, `image-provider` (best effort, the UI
 tolerates empty results), the observability stack (infrastructure, not product), `chatbot`
@@ -21,34 +26,65 @@ tolerates empty results), the observability stack (infrastructure, not product),
 ## 2. Test pyramid
 
 ```
-        E2E (browser)         ~10   golden path + 2 or 3 broken paths
-     Integration + contract   50-70 API + gRPC against docker compose, no mocks, flagd faults
-   Unit                       n/a   owned by service teams; QA tracks coverage trend, does not write them
+E2E (browser)         ~10   golden path + 2 or 3 broken paths
+Integration + contract   50-70 API + gRPC against docker compose, no mocks, flagd faults
+Unit                      owned by service teams; QA tracks coverage trend, does not write them
 ```
 
 **Unit.** Owned by each service's engineers. In eight languages, QA writing unit tests for code it does
 not own is a bad trade. QA's job here is visibility: coverage trend per service, gated in CI.
 
-**Integration and contract, the centre of gravity.** Run against `docker compose up` with real
-service-to-service calls, through the BFF and, where the BFF has no route (search), directly over gRPC.
-Two kinds of check share the suite:
+**Integration and Contract Test Cases** Test Cases covering interaction of different services and E2E user flows, these can be of 2 types:
 
-- Contract: diff `pb/demo.proto` message shapes against a checked-in baseline (`buf breaking` does
-  this), and validate BFF responses against the OpenAPI in `agentic/openapi/`. This is the only
-  compile-time-equivalent link across eight languages. A required field added to `PlaceOrderRequest`
-  fails here, not as a 500 in staging.
 - Behaviour: place a real order and assert the cart is cleared; toggle `paymentFailure`,
   `productCatalogFailure`, `cartFailure` and assert the API fails the right way and does not silently
   succeed. Every flagd flag is a repeatable negative test instead of a support ticket.
+- Contract: API Contract Validation: Validate API contracts agreed upon between two different services. REST APIs triggered from the Frontend must adhere to the API contract agreed between FE and BE. Schema validation of the actual API responses against the defined contract helps ensure that the communication between FE and BE remains consistent and compliant with the agreed specifications.
 
-Fast enough to run on every PR (target under 10 minutes including compose boot). The cost is a full stack
-per run and a shared, mutable flagd, which forces the fault-injection tests to run serially.
 
-**E2E.** One golden path plus two or three broken paths. Its job is to prove the browser, frontend and BFF
+**E2E.** E2E Business Happy Flow including Frontend &  some negative cases that cant be covered in integration scenarios. Its job is to prove the browser, frontend and BFF
 are wired together, not to re-verify logic already proven at the API layer.
 
-**Performance.** `load-generator` ships with the repo. Point it at checkout with p95 and error-rate
-thresholds, nightly, not per PR. No custom framework.
+**Performance.**
+
+*Which flow.* Checkout/Place Order is the primary target — it's the flow ranked highest risk in §1, so a
+latency or error regression there is a direct revenue and trust cost, not just a bad experience. Cart and
+the product/currency read paths are the secondary target: they're hit on nearly every page view, so a
+regression there compounds across an entire session rather than one transaction.
+
+*Metrics — not just "is it fast."* Latency as percentiles (p50/p90/p95/p99) per endpoint, never a single
+average — an average hides exactly the tail latency that drives complaints and cart abandonment. Error/
+failure rate under load, separately from latency (a fast 500 is not a pass). Sustained throughput before
+the system degrades, not just its behavior at one fixed concurrency. For checkout specifically, the true
+end-to-end transaction time across its full downstream fan-out (cart, currency, shipping, payment, email),
+not just the outermost response time — a slow single downstream call can hide inside an otherwise-acceptable
+aggregate.
+
+*API performance vs. end-to-end.* Test at the API layer first — hitting REST/gRPC endpoints directly, no
+browser — because it isolates a backend regression from frontend rendering noise and is cheap enough to run
+often. Add a smaller browser-driven pass to capture real user-perceived load time (time-to-interactive, not
+just server response time), which an API-only test can't see. Run more than one load shape: steady-state
+(expected normal traffic), peak/spike (a sale or marketing-driven burst), and a longer soak/endurance run
+(memory and connection leaks typically only show up after hours, not minutes) — a single fixed-load run
+answers none of these on its own.
+
+*Tooling.* The specific tool matters less than covering the right flow with the right metrics — any
+scriptable load generator (e.g. k6, Locust, JMeter, Gatling) can do this. Prefer whichever the team already
+runs, or whichever integrates most easily with the existing observability/metrics-and-tracing backend,
+over introducing a new one just for this. If a tracing/metrics pipeline is already in place (as it is here,
+via OpenTelemetry), reuse it to compute these percentiles instead of building a bespoke report-parsing
+script — most systems with any observability already have an answer to "what's this endpoint's p95"
+sitting in it unused.
+
+*Baseline.* Derive it empirically — the current p50/p95/error-rate under realistic (production or
+production-like staging) traffic — never an arbitrary number picked in a meeting. Version it like any other
+test fixture (commit it, review changes to it) so "did we regress" is a comparison against a recorded
+number, not a guess, and re-baseline deliberately after an intentional architecture change rather than
+letting it silently drift.
+
+*Cadence.* Nightly, not per PR, against an environment that's had time to warm up — a freshly booted,
+PR-scoped stack is never warmed up long enough for a load number to mean anything. A breach pages on-call
+the same way a nightly E2E regression does (§4); it does not block a merge.
 
 **Left unautomated, on purpose:** percentage-based flag variants (a single-run assertion on "roughly
 half fail" is flaky by construction), full currency-pair combinatorics (sample USD, EUR, JPY), currency
