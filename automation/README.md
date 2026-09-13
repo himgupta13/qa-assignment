@@ -36,23 +36,63 @@ RUN_GRPC_TESTS=1 npx playwright test product-catalog.grpc
 
 ## What's automated
 
+All 19 tests below were run and pass against a real `docker compose up` stack (not just type-checked or
+listed) — see "Live verification" below for what that surfaced.
+
 | Test case | File | Automated? |
 |---|---|---|
 | TC-CO-01 (happy path + multi-item) | `tests/api/checkout.spec.ts` | Yes |
 | TC-CO-02 (payment declined) | `tests/api/checkout.spec.ts` | Yes |
 | TC-CO-03 (downstream cart failure) | *adapted* — see below | Adapted |
-| TC-CO-04 (empty cart) | `tests/api/checkout.spec.ts` | Yes, as a risk-flagging test (see below) |
+| TC-CO-04 (empty cart) | `tests/api/checkout.spec.ts` | Yes — pins a **confirmed bug** (see below) |
 | TC-CO-05 (currency mismatch) | — | **No** — see below |
 | TC-CT-01 (quantity accumulation) | `tests/api/cart.spec.ts` | Yes |
 | TC-CT-02 (empty cart, idempotent delete) | `tests/api/cart.spec.ts` | Yes |
-| TC-CT-03 (partial cartFailure %) | `tests/api/cart.spec.ts` | Yes, scripted at 100% only (see below) |
+| TC-CT-03 (partial cartFailure %) | `tests/api/cart.spec.ts` | Yes, corrected against real behavior (see below) |
 | TC-PC-01 (currency consistency, JPY) | `tests/api/product-catalog.spec.ts` | Yes |
 | TC-PC-02 (targeted product failure) | `tests/api/product-catalog.spec.ts` | Yes (2 tests) |
 | TC-PC-03 (search edge cases) | `tests/api/product-catalog.grpc.spec.ts` | Yes, via direct gRPC (see below) |
+| Nonexistent product ID | `tests/api/product-catalog.spec.ts` | Yes — pins a **confirmed bug** (see below) |
 | Golden path (browse → cart → checkout) | `tests/e2e/golden-path.spec.ts` | Yes (UI) |
 
 **Automation coverage: 10 of 11 documented test cases automated (91%)** — the checkout flow's currency
 mismatch case is the one deliberate gap.
+
+## Live verification: two confirmed bugs, three corrected assumptions
+
+Once Docker was available, every test in this suite was run against the real app, not just type-checked.
+That surfaced real findings — some in the test suite's own assumptions, two in the application itself:
+
+1. **CONFIRMED BUG — `GET /api/products/{id}` for a nonexistent ID returns an unhandled 500, not a 404.**
+   `product-catalog`'s `GetProduct` (`main.go`) correctly signals gRPC `codes.NotFound`, but the frontend BFF
+   route (`pages/api/products/[productId]/index.ts`) has no error handling around the call at all, so the
+   rejection becomes a generic 500. Independently, the agentic pipeline's generated suite in `../agentic/`
+   caught this same gap on its own when pointed at the live app instead of its mock — see
+   `../agentic/AGENT-DESIGN.md`. `product-catalog.spec.ts` now pins the 500 as a regression guard.
+2. **CONFIRMED BUG — checking out an empty cart 500s with a generic `{"error":"Failed to place order."}`**
+   instead of a graceful 4xx. `checkout.spec.ts` TC-CO-04 was originally written as an open ambiguity
+   ("what *should* happen?") and resolved by running it live; now pins the bug as a regression guard.
+3. **Corrected assumption — `cartFailure` only affects `EmptyCart`, not `GetCart`/`AddItem`.**
+   `src/cart/src/services/CartService.cs` only reads the flag inside `EmptyCart`, and even then routes to a
+   hardcoded unreachable store (`"badhost:1234"` in `Program.cs`) rather than a documented error path.
+   TC-CT-03 originally targeted `GetCart` and failed against the live app; split into one test documenting
+   the (surprising) GET/AddItem no-op and one targeting the `DELETE` path that actually triggers the flag.
+4. **Corrected assumption — flagd propagation isn't instant.** The flag-write endpoint returns before
+   flagd/the target service has actually applied the new value; a test firing its next request immediately
+   after a write could observe the stale value. Added an empirical 1s wait in `fixtures/flagd.ts`.
+5. **Corrected assumption — flagd state is global, so parallel tests raced each other.** Playwright's
+   default `fullyParallel` let one test's flag change leak into an unrelated concurrent request from another
+   test. The `api` project now runs serially (`fullyParallel: false, workers: 1` in `playwright.config.ts`).
+6. **Two E2E selector corrections**: `CypressFields.CheckoutItem` (`data-cy="checkout-item"`) turned out to
+   be dead in this flow — set on `components/CheckoutItem/CheckoutItem.tsx`, but the real order-confirmation
+   page (`pages/cart/checkout/[orderId]/index.tsx`) renders its own markup with no data-cy hooks at all.
+   `golden-path.spec.ts` now asserts on real rendered content (the confirmation heading + the actual product
+   name) instead. Also, `CheckoutForm`'s field labels are plain `<p>` tags with no real `label`-`for`
+   association (a minor a11y gap, worth flagging to engineering) — moot for the golden path since the form
+   ships pre-filled with valid sample data and doesn't need filling at all.
+
+None of this was hypothetical — every item above is a real result from actually executing the suite, not a
+prediction about what might go wrong.
 
 ## What's not automated, and why
 
@@ -93,9 +133,8 @@ mismatch case is the one deliberate gap.
 ## Notes on the UI test
 
 `tests/e2e/golden-path.spec.ts` selectors are taken directly from the frontend's own source — the app's
-`data-cy` test hooks (`src/frontend/utils/enums/CypressFields.ts`) and the real accessible labels in
-`CheckoutForm.tsx` — rather than guessed, and the flow (add-to-cart auto-navigates to `/cart`; placing an
-order navigates to `/checkout`) is confirmed by reading the app's own `Checkout.cy.ts`. That said, this test
-has not yet been *executed* against a live app, since it could not be run end-to-end without Docker
-installed — flagged explicitly rather than presented as verified. See the root README for current
-verification status.
+`data-cy` test hooks (`src/frontend/utils/enums/CypressFields.ts`) — and the flow (add-to-cart
+auto-navigates to `/cart`; placing an order navigates to `/checkout`) is confirmed by reading the app's own
+`Checkout.cy.ts`. Passes against the live app; see "Live verification" above for the two selector
+corrections this needed after actually running it (a dead `data-cy` hook and non-label-associated form
+fields).
