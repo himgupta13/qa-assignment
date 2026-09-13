@@ -11,13 +11,7 @@ npm install
 npx playwright install --with-deps chromium
 ```
 
-The suite is self-contained. It does not read anything from the `opentelemetry-demo/` clone: the one
-proto the gRPC test needs is vendored at `protos/demo.proto` (upstream commit `e297a3be`). An earlier
-version resolved the proto from the clone at test-discovery time, which meant `npm test` without the clone
-present collected **zero** tests and aborted. That is fixed; the gRPC client is now created lazily inside
-the skipped-unless-configured describe.
-
-## Running
+## Execution
 
 ```bash
 npm test              # everything (api + e2e)
@@ -28,50 +22,36 @@ npm run report        # open the last HTML report
 
 Override the target with `BASE_URL=http://localhost:8080 npm test` if the frontend isn't on the default port.
 
-The four gRPC search tests (`product-catalog.grpc.spec.ts`) are skipped unless `PRODUCT_CATALOG_GRPC_ADDR`
-is set, because product-catalog's gRPC port isn't fixed on the host (`compose.yaml` publishes it to a
-random port). Resolve it and run with:
-
-```bash
-export PRODUCT_CATALOG_GRPC_ADDR=$(docker compose -f ../opentelemetry-demo/compose.yaml port product-catalog 3550 | sed 's/0.0.0.0/localhost/')
-npm test
-```
-
 ## What's automated
 
+**Checkout**
+- Single-item happy path, verifying every mandatory field (TC-CO-01)
+- Multi-item, multi-quantity happy path (TC-CO-02)
+- Payment declined (TC-CO-03)
+- Idempotency under concurrent duplicate requests (TC-CO-04)
+- Cart-service failure during checkout (TC-CO-05)
+- Empty-cart checkout (TC-CO-06)
 
+**Cart**
+- Mandatory cart-page fields, the API-verifiable subset (TC-CT-01)
+- Quantity accumulation on repeated add (TC-CT-02)
+- Empty cart and idempotent delete (TC-CT-03)
+- Partial cart-service failure (TC-CT-04)
+- Currency switch on cart (TC-CT-07)
+- Quantity update and recalculation (TC-CT-08)
 
-| Test case | File | Automated? |
-|---|---|---|
-| TC-CO-01 (single-item happy path, mandatory fields) | `tests/api/checkout.spec.ts` | Yes |
-| TC-CO-02 (multi-item/multi-quantity happy path) | `tests/api/checkout.spec.ts` | Yes |
-| TC-CO-03 (payment declined) | `tests/api/checkout.spec.ts` | Yes |
-| TC-CO-04 (idempotency) | `tests/api/checkout.spec.ts` | Yes — pins a **newly confirmed bug** (see below) |
-| TC-CO-05 (cart failure during checkout) | `tests/api/checkout.spec.ts` | Yes — pins a **confirmed bug** (see below); TC-CO-05b covers the "not misclassified as a decline" edge |
-| TC-CO-06 (empty cart) | `tests/api/checkout.spec.ts` | Yes — pins a **confirmed bug** (see below) |
-| TC-CO-07 (currency mismatch) | — | **No** — see below |
-| TC-CT-01 (mandatory cart-page fields) | `tests/api/cart.spec.ts` | Yes, API-verifiable fields only (see below) |
-| TC-CT-02 (quantity accumulation) | `tests/api/cart.spec.ts` | Yes |
-| TC-CT-03 (empty cart, idempotent delete) | `tests/api/cart.spec.ts` | Yes |
-| TC-CT-04 (partial cartFailure %) | `tests/api/cart.spec.ts` | Yes, corrected against real behavior (see below) |
-| TC-CT-05 (session persistence across "relogin") | — | **No** — see below |
-| TC-CT-06 (multi-tab/multi-browser consistency) | — | **No** — see below |
-| TC-CT-07 (currency switch on cart) | `tests/api/cart.spec.ts` | Yes |
-| TC-CT-08 (quantity update recalculation) | `tests/api/cart.spec.ts` | Yes — pins a **newly confirmed bug** (see below) |
-| TC-PC-01 (currency consistency, JPY) | `tests/api/product-catalog.spec.ts` | Yes |
-| TC-PC-02 (targeted product failure) | `tests/api/product-catalog.spec.ts` | Yes (2 tests) |
-| TC-PC-03 (search edge cases) | `tests/api/product-catalog.grpc.spec.ts` | Yes, via direct gRPC (see below) |
-| Nonexistent product ID | `tests/api/product-catalog.spec.ts` | Yes — pins a **confirmed bug** (see below) |
-| Golden path (browse → cart → checkout) | `tests/e2e/golden-path.spec.ts` | Yes (UI) |
+**Product catalog**
+- Currency consistency across conversions, including JPY (TC-PC-01)
+- Targeted product-catalog failure (TC-PC-02)
+- Search edge cases, via direct gRPC (TC-PC-03)
+- Nonexistent product ID
 
-**Automation coverage: 15 of 18 documented test cases automated.** Broken down honestly:
+**UI**
+- Golden path: browse → add to cart → checkout
 
-| Category | Cases |
-|---|---|
-| Automated as written | TC-CO-01, 02, 03; TC-CT-01 (API fields), 02, 03, 07; TC-PC-01, 02, 03 (via gRPC) |
-| Automated, pinned to a confirmed bug | TC-CO-04, TC-CO-05, TC-CO-06, TC-CT-08 (negative quantity), nonexistent product |
-| Automated after correcting the test case | TC-CT-04 (`cartFailure` only affects `EmptyCart`) |
-| Manual only | TC-CO-07 (needs a rate oracle), TC-CT-05, TC-CT-06 (browser storage / tabs) |
+**Automation coverage: 15 of 18 documented test cases.** The three not automated — currency mismatch at
+checkout, session persistence across a "relogin", and multi-tab/browser consistency — are covered in
+"What's not automated, and why" below.
 
 ## Live verification: five confirmed bugs, corrected assumptions
 
